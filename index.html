@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول باستخدام جوجل</title>
+    
+    <!-- Google Identity Services Library -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Cairo for Arabic) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- Main container -->
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-md">
+            
+            <!-- Login Card -->
+            <div id="login-card" class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl shadow-2xl p-8 transform transition-all duration-500 hover:scale-105">
+                
+                <!-- Logo and Header -->
+                <div class="text-center mb-8">
+                    <!-- Custom Logo SVG -->
+                    <svg height="80" width="80" viewBox="0 0 100 100" class="mx-auto mb-4">
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color: #4F46E5; stop-opacity: 1" />
+                                <stop offset="100%" style="stop-color: #A855F7; stop-opacity: 1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M50 2 a 48 48 0 0 1 0 96 a 48 48 0 0 1 0 -96" fill="none" stroke="url(#logoGradient)" stroke-width="4" />
+                        <path d="M30 50 a 20 20 0 0 1 40 0" fill="none" stroke="url(#logoGradient)" stroke-width="4" stroke-linecap="round" />
+                        <circle cx="50" cy="30" r="6" fill="url(#logoGradient)" />
+                    </svg>
+                    <h1 class="text-3xl font-bold text-gray-100">
+                        تسجيل الدخول إلى حسابك
+                    </h1>
+                    <p class="text-gray-400 mt-3">
+                        استخدم حساب Google الخاص بك للمتابعة.
+                    </p>
+                </div>
+                
+                <!-- Google Sign-In Button Container -->
+                <div id="google-button-container" class="flex justify-center">
+                    <!-- The Google Sign-In button will be rendered here by the script -->
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center mt-8">
+                <p class="text-sm text-gray-500">
+                    &copy; <span id="year"></span> Claude-Google Demo. جميع الحقوق محفوظة.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set current year in footer
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // This function will be called by the Google library after the user signs in
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            // Here, you would typically send this 'response.credential' (the token) to your backend server.
+            // Your server would then verify the token with Google, and if valid, create a session or log the user in.
+            
+            // For demonstration, we'll just show a success message on the card.
+            const loginCard = document.getElementById('login-card');
+            loginCard.innerHTML = `
+                <div class="text-center p-4">
+                    <h2 class="text-2xl font-bold text-green-400 mb-4">تم تسجيل الدخول بنجاح!</h2>
+                    <p class="text-gray-300">يمكنك الآن إغلاق هذه النافذة.</p>
+                    <p class="text-xs text-gray-500 mt-6">تم تسجيل بيانات الاعتماد في الكونسول.</p>
+                </div>
+            `;
+        }
+
+        // This function runs when the window loads
+        window.onload = function () {
+            // Initialize the Google Identity Services
+            google.accounts.id.initialize({
+                client_id: "969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com",
+                callback: handleCredentialResponse // The function to call after sign-in
+            });
+            
+            // Render the Google Sign-In button
+            google.accounts.id.renderButton(
+                document.getElementById("google-button-container"), // The element to render the button in
+                { 
+                    theme: "outline", 
+                    size: "large",
+                    type: "standard",
+                    text: "signin_with",
+                    shape: "rectangular",
+                    logo_alignment: "left",
+                    locale: "ar" // Set button language to Arabic
+                }
+            );
+            
+            // Optional: Prompt the user to sign in automatically upon page load
+            // google.accounts.id.prompt(); 
+        };
+    </script>
+
+</body>
+</html>
