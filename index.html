@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول باستخدام جوجل</title>
+    <title>منصة التواصل الاجتماعي</title>
     
     <!-- Google Identity Services Library -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -14,107 +14,454 @@
     <!-- Google Fonts (Cairo for Arabic) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <style>
         body {
             font-family: 'Cairo', sans-serif;
+            background-color: #111827; /* Darker bg */
+            color: #f9fafb;
+        }
+        /* Simple transition for view switching */
+        .view {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        .view.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom scrollbar for a better look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+        /* Style for embedded videos */
+        .post-video {
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            border-radius: 0.75rem;
         }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
 
-    <!-- Main container -->
-    <div class="min-h-screen flex flex-col items-center justify-center p-4">
-        <div class="w-full max-w-md">
-            
-            <!-- Login Card -->
-            <div id="login-card" class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl shadow-2xl p-8 transform transition-all duration-500 hover:scale-105">
-                
-                <!-- Logo and Header -->
-                <div class="text-center mb-8">
-                    <!-- Custom Logo SVG -->
-                    <svg height="80" width="80" viewBox="0 0 100 100" class="mx-auto mb-4">
-                        <defs>
-                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color: #4F46E5; stop-opacity: 1" />
-                                <stop offset="100%" style="stop-color: #A855F7; stop-opacity: 1" />
-                            </linearGradient>
-                        </defs>
-                        <path d="M50 2 a 48 48 0 0 1 0 96 a 48 48 0 0 1 0 -96" fill="none" stroke="url(#logoGradient)" stroke-width="4" />
-                        <path d="M30 50 a 20 20 0 0 1 40 0" fill="none" stroke="url(#logoGradient)" stroke-width="4" stroke-linecap="round" />
-                        <circle cx="50" cy="30" r="6" fill="url(#logoGradient)" />
-                    </svg>
-                    <h1 class="text-3xl font-bold text-gray-100">
-                        تسجيل الدخول إلى حسابك
-                    </h1>
-                    <p class="text-gray-400 mt-3">
-                        استخدم حساب Google الخاص بك للمتابعة.
-                    </p>
-                </div>
-                
-                <!-- Google Sign-In Button Container -->
-                <div id="google-button-container" class="flex justify-center">
-                    <!-- The Google Sign-In button will be rendered here by the script -->
-                </div>
+    <!-- Main Application Container -->
+    <div id="app-container">
 
-            </div>
-
-            <!-- Footer -->
-            <div class="text-center mt-8">
-                <p class="text-sm text-gray-500">
-                    &copy; <span id="year"></span> Claude-Google Demo. جميع الحقوق محفوظة.
-                </p>
+        <!-- ===== Login View ===== -->
+        <div id="login-view" class="view active min-h-screen flex flex-col items-center justify-center p-4">
+            <div class="w-full max-w-md">
+                <div id="login-card" class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl shadow-2xl p-8 transform transition-all duration-500 hover:scale-105">
+                    <div class="text-center mb-8">
+                        <svg height="80" width="80" viewBox="0 0 100 100" class="mx-auto mb-4">
+                            <defs>
+                                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color: #4F46E5; stop-opacity: 1" />
+                                    <stop offset="100%" style="stop-color: #A855F7; stop-opacity: 1" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M50 2 a 48 48 0 0 1 0 96 a 48 48 0 0 1 0 -96" fill="none" stroke="url(#logoGradient)" stroke-width="4" />
+                            <path d="M30 50 a 20 20 0 0 1 40 0" fill="none" stroke="url(#logoGradient)" stroke-width="4" stroke-linecap="round" />
+                            <circle cx="50" cy="30" r="6" fill="url(#logoGradient)" />
+                        </svg>
+                        <h1 class="text-3xl font-bold text-gray-100">تسجيل الدخول إلى حسابك</h1>
+                        <p class="text-gray-400 mt-3">استخدم حساب Google الخاص بك للمتابعة.</p>
+                    </div>
+                    <div id="google-button-container" class="flex justify-center"></div>
+                </div>
+                <div class="text-center mt-8">
+                    <p class="text-sm text-gray-500">&copy; <span id="year"></span> Social Platform. جميع الحقوق محفوظة.</p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        // Set current year in footer
-        document.getElementById('year').textContent = new Date().getFullYear();
+        <!-- ===== Main App View (Feed, Profile, etc.) ===== -->
+        <div id="main-app-view" class="view">
+            <!-- Header -->
+            <header class="bg-gray-800/80 backdrop-blur-sm shadow-lg sticky top-0 z-50">
+                <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center justify-between h-16">
+                        <div class="flex items-center">
+                            <span class="font-bold text-xl text-white cursor-pointer" onclick="navigateTo('feed')"><i class="fas fa-satellite-dish text-indigo-400"></i> Social</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                             <button onclick="navigateTo('create-post')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 flex items-center space-x-2 rtl:space-x-reverse">
+                                <i class="fas fa-plus"></i>
+                                <span>إنشاء منشور</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-4 rtl:space-x-reverse">
+                            <button onclick="navigateTo('feed')" class="text-gray-300 hover:text-white transition"><i class="fas fa-home text-2xl"></i></button>
+                            <button onclick="navigateTo('profile')" class="text-gray-300 hover:text-white transition"><i class="fas fa-user text-2xl"></i></button>
+                            <button id="logout-button" class="text-gray-300 hover:text-red-500 transition"><i class="fas fa-sign-out-alt text-2xl"></i></button>
+                        </div>
+                    </div>
+                </nav>
+            </header>
 
-        // This function will be called by the Google library after the user signs in
-        function handleCredentialResponse(response) {
-            console.log("Encoded JWT ID token: " + response.credential);
-            // Here, you would typically send this 'response.credential' (the token) to your backend server.
-            // Your server would then verify the token with Google, and if valid, create a session or log the user in.
-            
-            // For demonstration, we'll just show a success message on the card.
-            const loginCard = document.getElementById('login-card');
-            loginCard.innerHTML = `
-                <div class="text-center p-4">
-                    <h2 class="text-2xl font-bold text-green-400 mb-4">تم تسجيل الدخول بنجاح!</h2>
-                    <p class="text-gray-300">يمكنك الآن إغلاق هذه النافذة.</p>
-                    <p class="text-xs text-gray-500 mt-6">تم تسجيل بيانات الاعتماد في الكونسول.</p>
+            <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+                <!-- Feed Section -->
+                <div id="feed-section" class="app-section">
+                    <h2 class="text-3xl font-bold mb-6">آخر المنشورات</h2>
+                    <div id="feed-posts-container" class="space-y-6">
+                        <!-- Posts will be loaded here -->
+                        <p class="text-gray-400">يتم تحميل المنشورات...</p>
+                    </div>
                 </div>
-            `;
+
+                <!-- Profile Section -->
+                <div id="profile-section" class="app-section" style="display: none;">
+                    <div class="bg-gray-800 rounded-2xl p-8 text-center shadow-lg">
+                        <img id="profile-pic" src="https://placehold.co/128x128/1f2937/ffffff?text=User" alt="صورة الملف الشخصي" class="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-indigo-500">
+                        <h2 id="profile-name" class="text-3xl font-bold">اسم المستخدم</h2>
+                        <p id="profile-email" class="text-gray-400 mt-1">البريد الإلكتروني</p>
+                    </div>
+                    <h3 class="text-2xl font-bold mt-8 mb-4">منشوراتي</h3>
+                    <div id="profile-posts-container" class="space-y-6">
+                        <!-- User's posts will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Create Post Section -->
+                <div id="create-post-section" class="app-section" style="display: none;">
+                     <div class="bg-gray-800 rounded-2xl p-8 max-w-2xl mx-auto shadow-lg">
+                        <h2 class="text-3xl font-bold mb-6">إنشاء منشور جديد</h2>
+                        <form id="create-post-form">
+                            <div class="mb-4">
+                                <label for="post-content" class="block text-gray-300 text-sm font-bold mb-2">محتوى المنشور:</label>
+                                <textarea id="post-content" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="بماذا تفكر؟"></textarea>
+                            </div>
+                            <div class="mb-6">
+                                <label for="video-url" class="block text-gray-300 text-sm font-bold mb-2">رابط فيديو (اختياري):</label>
+                                <input type="url" id="video-url" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="https://youtube.com/watch?v=...">
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full transition duration-300">
+                                    نشر
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, getDocs, where, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        // IMPORTANT: Replace with your actual Firebase config
+        const firebaseConfig = JSON.parse(__firebase_config || '{}');
+
+        // --- App Initialization ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // --- Global State ---
+        let currentUser = null;
+
+        // --- UI Elements ---
+        const loginView = document.getElementById('login-view');
+        const mainAppView = document.getElementById('main-app-view');
+        const logoutButton = document.getElementById('logout-button');
+        const createPostForm = document.getElementById('create-post-form');
+
+        // --- Authentication Handling ---
+        
+        // Listen for authentication state changes
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // User is signed in.
+                currentUser = {
+                    uid: user.uid,
+                    displayName: user.displayName || 'مستخدم جديد',
+                    email: user.email,
+                    photoURL: user.photoURL || 'https://placehold.co/96x96/1f2937/ffffff?text=U'
+                };
+                
+                // Save or update user profile in Firestore
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, {
+                    displayName: currentUser.displayName,
+                    email: currentUser.email,
+                    photoURL: currentUser.photoURL
+                }, { merge: true });
+
+                console.log("User is logged in:", currentUser);
+                showMainApp();
+            } else {
+                // User is signed out.
+                currentUser = null;
+                console.log("User is logged out.");
+                showLoginView();
+            }
+        });
+        
+        // Function to decode JWT token
+        function decodeJwtResponse(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
         }
 
-        // This function runs when the window loads
-        window.onload = function () {
-            // Initialize the Google Identity Services
-            google.accounts.id.initialize({
-                client_id: "969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com",
-                callback: handleCredentialResponse // The function to call after sign-in
-            });
+
+        // Google Sign-In handler
+        window.handleCredentialResponse = async (response) => {
+            console.log("Encoded JWT ID token: " + response.credential);
             
-            // Render the Google Sign-In button
-            google.accounts.id.renderButton(
-                document.getElementById("google-button-container"), // The element to render the button in
-                { 
-                    theme: "outline", 
-                    size: "large",
-                    type: "standard",
-                    text: "signin_with",
-                    shape: "rectangular",
-                    logo_alignment: "left",
-                    locale: "ar" // Set button language to Arabic
-                }
-            );
+            // For demonstration, we'll decode the token on the client to get user info
+            const decodedToken = decodeJwtResponse(response.credential);
             
-            // Optional: Prompt the user to sign in automatically upon page load
-            // google.accounts.id.prompt(); 
+            const tempUser = {
+                uid: decodedToken.sub, // Google's user ID
+                displayName: decodedToken.name,
+                email: decodedToken.email,
+                photoURL: decodedToken.picture,
+            };
+
+            // In a real app, you would send `response.credential` to your backend,
+            // verify it, and your backend would create a custom Firebase token.
+            // For this demo, we can't generate a custom token on the client.
+            // We will proceed without custom token sign-in and manage state locally.
+            // This means auth state is not persisted via Firebase Auth, but we'll simulate it.
+            
+            currentUser = tempUser;
+             // Save or update user profile in Firestore
+            const userRef = doc(db, "users", currentUser.uid);
+            await setDoc(userRef, {
+                displayName: currentUser.displayName,
+                email: currentUser.email,
+                photoURL: currentUser.photoURL
+            }, { merge: true });
+
+            console.log("User logged in with Google:", currentUser);
+            showMainApp();
         };
+
+        // Initialize Google Button
+        function initializeGoogleButton() {
+             if (typeof google !== 'undefined') {
+                google.accounts.id.initialize({
+                    client_id: "969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com",
+                    callback: window.handleCredentialResponse
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById("google-button-container"),
+                    { theme: "outline", size: "large", type: "standard", text: "signin_with", shape: "rectangular", logo_alignment: "left", locale: "ar" }
+                );
+             } else {
+                console.log("Google library not loaded yet.");
+             }
+        }
+
+        // --- View Management ---
+        function showLoginView() {
+            loginView.classList.add('active');
+            mainAppView.classList.remove('active');
+        }
+
+        function showMainApp() {
+            loginView.classList.remove('active');
+            mainAppView.classList.add('active');
+            updateProfileUI();
+            navigateTo('feed'); // Default to feed view
+        }
+        
+        window.navigateTo = (sectionId) => {
+            document.querySelectorAll('.app-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(`${sectionId}-section`).style.display = 'block';
+            
+            if(sectionId === 'feed') loadFeedPosts();
+            if(sectionId === 'profile') loadProfilePosts();
+        }
+
+        // --- UI Updates ---
+        function updateProfileUI() {
+            if (currentUser) {
+                document.getElementById('profile-pic').src = currentUser.photoURL;
+                document.getElementById('profile-pic').onerror = () => { document.getElementById('profile-pic').src = 'https://placehold.co/128x128/1f2937/ffffff?text=User'; };
+                document.getElementById('profile-name').textContent = currentUser.displayName;
+                document.getElementById('profile-email').textContent = currentUser.email;
+            }
+        }
+
+        // --- Firestore Logic (Content Management) ---
+
+        // Create a new post
+        createPostForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) {
+                alert("يجب عليك تسجيل الدخول أولاً.");
+                return;
+            }
+
+            const content = document.getElementById('post-content').value.trim();
+            const videoUrl = document.getElementById('video-url').value.trim();
+
+            if (!content && !videoUrl) {
+                alert("لا يمكن إنشاء منشور فارغ.");
+                return;
+            }
+            
+            const postButton = createPostForm.querySelector('button[type="submit"]');
+            postButton.disabled = true;
+            postButton.textContent = 'جاري النشر...';
+
+            try {
+                await addDoc(collection(db, "posts"), {
+                    authorId: currentUser.uid,
+                    authorName: currentUser.displayName,
+                    authorPhoto: currentUser.photoURL,
+                    content: content,
+                    videoUrl: videoUrl,
+                    createdAt: new Date()
+                });
+                
+                // Clear form and navigate to feed
+                createPostForm.reset();
+                navigateTo('feed');
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                alert("حدث خطأ أثناء نشر المنشور.");
+            } finally {
+                postButton.disabled = false;
+                postButton.textContent = 'نشر';
+            }
+        });
+
+        // Load all posts for the feed
+        async function loadFeedPosts() {
+            const container = document.getElementById('feed-posts-container');
+            container.innerHTML = '<p class="text-gray-400">يتم تحميل المنشورات...</p>';
+            
+            const postsQuery = query(collection(db, "posts"));
+            
+            // Use onSnapshot for real-time updates
+            onSnapshot(postsQuery, (querySnapshot) => {
+                const posts = [];
+                querySnapshot.forEach((doc) => {
+                    posts.push({ id: doc.id, ...doc.data() });
+                });
+                // Sort by date descending
+                posts.sort((a,b) => b.createdAt.toDate() - a.createdAt.toDate());
+                renderPosts(container, posts);
+            }, (error) => {
+                 console.error("Error fetching posts: ", error);
+                 container.innerHTML = '<p class="text-red-400">حدث خطأ في جلب المنشورات.</p>';
+            });
+        }
+
+        // Load posts for the current user's profile
+        async function loadProfilePosts() {
+            if (!currentUser) return;
+            const container = document.getElementById('profile-posts-container');
+            container.innerHTML = '<p class="text-gray-400">يتم تحميل منشوراتك...</p>';
+
+            const postsQuery = query(collection(db, "posts"), where("authorId", "==", currentUser.uid));
+            
+            onSnapshot(postsQuery, (querySnapshot) => {
+                const posts = [];
+                querySnapshot.forEach((doc) => {
+                    posts.push({ id: doc.id, ...doc.data() });
+                });
+                posts.sort((a,b) => b.createdAt.toDate() - a.createdAt.toDate());
+                renderPosts(container, posts);
+                 if (posts.length === 0) {
+                    container.innerHTML = '<p class="text-gray-400 text-center py-8">ليس لديك أي منشورات حتى الآن. قم بإنشاء أول منشور لك!</p>';
+                }
+            }, (error) => {
+                 console.error("Error fetching profile posts: ", error);
+                 container.innerHTML = '<p class="text-red-400">حدث خطأ في جلب منشوراتك.</p>';
+            });
+        }
+        
+        // Render posts into a container
+        function renderPosts(container, posts) {
+            container.innerHTML = ''; // Clear previous content
+            if (posts.length === 0 && container.id === 'feed-posts-container') {
+                container.innerHTML = '<p class="text-gray-400 text-center py-8">لا توجد منشورات لعرضها. كن أول من ينشر!</p>';
+            }
+            posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'bg-gray-800 rounded-2xl p-5 shadow-lg';
+                
+                // Convert YouTube URL to embeddable URL
+                let videoEmbedHtml = '';
+                if (post.videoUrl) {
+                    let embedUrl = post.videoUrl;
+                    if (embedUrl.includes("youtube.com/watch?v=")) {
+                        const videoId = embedUrl.split('v=')[1].split('&')[0];
+                        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                    } else if (embedUrl.includes("youtu.be/")) {
+                         const videoId = embedUrl.split('youtu.be/')[1].split('?')[0];
+                         embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                    }
+                    // Basic validation for embeddable links
+                    if (embedUrl.includes('embed')) {
+                        videoEmbedHtml = `<div class="mt-4"><iframe class="post-video" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+                    }
+                }
+
+                postElement.innerHTML = `
+                    <div class="flex items-center mb-4">
+                        <img src="${post.authorPhoto || 'https://placehold.co/48x48/1f2937/ffffff?text=U'}" onerror="this.src='https://placehold.co/48x48/1f2937/ffffff?text=U'" alt="صورة الناشر" class="w-12 h-12 rounded-full mr-4 rtl:ml-4">
+                        <div>
+                            <p class="font-bold text-white">${post.authorName}</p>
+                            <p class="text-sm text-gray-400">${post.createdAt.toDate().toLocaleString('ar')}</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-300 whitespace-pre-wrap">${post.content}</p>
+                    ${videoEmbedHtml}
+                `;
+                container.appendChild(postElement);
+            });
+        }
+        
+        // --- Event Listeners ---
+        logoutButton.addEventListener('click', () => {
+            // Since we are not using Firebase Auth session, we just simulate logout
+            currentUser = null;
+            // Optionally, revoke Google token
+            if (typeof google !== 'undefined') {
+                 google.accounts.id.disableAutoSelect();
+            }
+            showLoginView();
+        });
+
+        // --- Initial Load ---
+        window.onload = () => {
+            document.getElementById('year').textContent = new Date().getFullYear();
+            initializeGoogleButton();
+        };
+
     </script>
 
 </body>
