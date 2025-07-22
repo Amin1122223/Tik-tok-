@@ -22,139 +22,169 @@
     <style>
         body {
             font-family: 'Cairo', sans-serif;
-            background-color: #111827; /* Darker bg */
+            background-color: #111827;
             color: #f9fafb;
         }
-        /* Simple transition for view switching */
-        .view {
-            display: none;
-            animation: fadeIn 0.5s;
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* New Layout Styles */
+        .main-layout {
+            display: flex;
         }
-        .view.active {
-            display: block;
+        .sidebar {
+            width: 280px;
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100vh;
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            transition: transform 0.3s ease-in-out;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .content-area {
+            margin-right: 280px; /* Same as sidebar width */
+            width: calc(100% - 280px);
+            padding: 1.5rem;
         }
-        /* Custom scrollbar for a better look */
-        ::-webkit-scrollbar {
-            width: 8px;
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(100%); /* Hide sidebar off-screen */
+                z-index: 100;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .content-area {
+                margin-right: 0;
+                width: 100%;
+            }
+            .mobile-menu-button { display: block; }
         }
-        ::-webkit-scrollbar-track {
-            background: #1f2937;
+
+        /* Skeleton Loader */
+        .skeleton {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            background-color: #374151;
+            border-radius: 0.5rem;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #4f46e5;
-            border-radius: 10px;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6366f1;
-        }
-        /* Style for embedded videos */
-        .post-video {
-            aspect-ratio: 16 / 9;
+        
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            border-radius: 0.75rem;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
+        .modal.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: #1f2937;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal.open .modal-content {
+            transform: scale(1);
+        }
+        .post-video { aspect-ratio: 16 / 9; width: 100%; border-radius: 0.75rem; }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
 
-    <!-- Main Application Container -->
-    <div id="app-container">
-
-        <!-- ===== Login View ===== -->
-        <div id="login-view" class="view active min-h-screen flex flex-col items-center justify-center p-4">
-            <div class="w-full max-w-md">
-                <div id="login-card" class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl shadow-2xl p-8 transform transition-all duration-500 hover:scale-105">
-                    <div class="text-center mb-8">
-                        <svg height="80" width="80" viewBox="0 0 100 100" class="mx-auto mb-4">
-                            <defs>
-                                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" style="stop-color: #4F46E5; stop-opacity: 1" />
-                                    <stop offset="100%" style="stop-color: #A855F7; stop-opacity: 1" />
-                                </linearGradient>
-                            </defs>
-                            <path d="M50 2 a 48 48 0 0 1 0 96 a 48 48 0 0 1 0 -96" fill="none" stroke="url(#logoGradient)" stroke-width="4" />
-                            <path d="M30 50 a 20 20 0 0 1 40 0" fill="none" stroke="url(#logoGradient)" stroke-width="4" stroke-linecap="round" />
-                            <circle cx="50" cy="30" r="6" fill="url(#logoGradient)" />
-                        </svg>
-                        <h1 class="text-3xl font-bold text-gray-100">تسجيل الدخول إلى حسابك</h1>
-                        <p class="text-gray-400 mt-3">استخدم حساب Google الخاص بك للمتابعة.</p>
-                    </div>
-                    <div id="google-button-container" class="flex justify-center"></div>
+    <!-- ===== Login View ===== -->
+    <div id="login-view" class="view active min-h-screen flex flex-col items-center justify-center p-4">
+        <!-- Login card content remains the same -->
+        <div class="w-full max-w-md">
+            <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl shadow-2xl p-8">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-100">تسجيل الدخول إلى حسابك</h1>
+                    <p class="text-gray-400 mt-3">استخدم حساب Google الخاص بك للمتابعة.</p>
                 </div>
-                <div class="text-center mt-8">
-                    <p class="text-sm text-gray-500">&copy; <span id="year"></span> Social Platform. جميع الحقوق محفوظة.</p>
-                </div>
+                <div id="google-button-container" class="flex justify-center"></div>
+                <p id="google-sdk-error" class="text-red-400 text-center mt-4 hidden">فشل تحميل زر تسجيل الدخول. يرجى تحديث الصفحة.</p>
             </div>
         </div>
+    </div>
 
-        <!-- ===== Main App View (Feed, Profile, etc.) ===== -->
-        <div id="main-app-view" class="view">
-            <!-- Header -->
-            <header class="bg-gray-800/80 backdrop-blur-sm shadow-lg sticky top-0 z-50">
-                <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex items-center justify-between h-16">
-                        <div class="flex items-center">
-                            <span class="font-bold text-xl text-white cursor-pointer" onclick="navigateTo('feed')"><i class="fas fa-satellite-dish text-indigo-400"></i> Social</span>
-                        </div>
-                        <div class="flex items-center space-x-4">
-                             <button onclick="navigateTo('create-post')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 flex items-center space-x-2 rtl:space-x-reverse">
-                                <i class="fas fa-plus"></i>
-                                <span>إنشاء منشور</span>
-                            </button>
-                        </div>
-                        <div class="flex items-center space-x-4 rtl:space-x-reverse">
-                            <button onclick="navigateTo('feed')" class="text-gray-300 hover:text-white transition"><i class="fas fa-home text-2xl"></i></button>
-                            <button onclick="navigateTo('profile')" class="text-gray-300 hover:text-white transition"><i class="fas fa-user text-2xl"></i></button>
-                            <button id="logout-button" class="text-gray-300 hover:text-red-500 transition"><i class="fas fa-sign-out-alt text-2xl"></i></button>
-                        </div>
+    <!-- ===== Main App View ===== -->
+    <div id="main-app-view" class="view">
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="flex flex-col h-full">
+                    <!-- Profile Info -->
+                    <div class="text-center mb-10">
+                        <img id="sidebar-profile-pic" src="https://placehold.co/96x96/374151/ffffff?text=U" class="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-indigo-500">
+                        <h2 id="sidebar-profile-name" class="text-xl font-bold">اسم المستخدم</h2>
+                        <p id="sidebar-profile-email" class="text-sm text-gray-400">البريد الإلكتروني</p>
                     </div>
-                </nav>
-            </header>
 
-            <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+                    <!-- Navigation -->
+                    <nav class="flex-grow">
+                        <ul class="space-y-2">
+                            <li><a href="#" onclick="navigateTo('feed')" class="flex items-center p-3 text-lg rounded-lg text-gray-200 hover:bg-indigo-600 transition-colors duration-200"><i class="fas fa-home w-6 ml-3"></i>آخر المنشورات</a></li>
+                            <li><a href="#" onclick="navigateTo('profile')" class="flex items-center p-3 text-lg rounded-lg text-gray-200 hover:bg-indigo-600 transition-colors duration-200"><i class="fas fa-user w-6 ml-3"></i>ملفي الشخصي</a></li>
+                            <li><a href="#" onclick="navigateTo('create-post')" class="flex items-center p-3 text-lg rounded-lg text-gray-200 hover:bg-indigo-600 transition-colors duration-200"><i class="fas fa-plus-square w-6 ml-3"></i>إنشاء منشور</a></li>
+                        </ul>
+                    </nav>
+
+                    <!-- Logout Button -->
+                    <div>
+                        <button id="logout-button" class="w-full flex items-center p-3 text-lg rounded-lg text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200">
+                            <i class="fas fa-sign-out-alt w-6 ml-3"></i>تسجيل الخروج
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="content-area">
                 <!-- Feed Section -->
                 <div id="feed-section" class="app-section">
                     <h2 class="text-3xl font-bold mb-6">آخر المنشورات</h2>
-                    <div id="feed-posts-container" class="space-y-6">
-                        <!-- Posts will be loaded here -->
-                        <p class="text-gray-400">يتم تحميل المنشورات...</p>
-                    </div>
+                    <div id="feed-posts-container" class="space-y-6 max-w-3xl mx-auto"></div>
                 </div>
 
                 <!-- Profile Section -->
-                <div id="profile-section" class="app-section" style="display: none;">
-                    <div class="bg-gray-800 rounded-2xl p-8 text-center shadow-lg">
-                        <img id="profile-pic" src="https://placehold.co/128x128/1f2937/ffffff?text=User" alt="صورة الملف الشخصي" class="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-indigo-500">
-                        <h2 id="profile-name" class="text-3xl font-bold">اسم المستخدم</h2>
-                        <p id="profile-email" class="text-gray-400 mt-1">البريد الإلكتروني</p>
-                    </div>
-                    <h3 class="text-2xl font-bold mt-8 mb-4">منشوراتي</h3>
-                    <div id="profile-posts-container" class="space-y-6">
-                        <!-- User's posts will be loaded here -->
-                    </div>
+                <div id="profile-section" class="app-section hidden">
+                    <h2 class="text-3xl font-bold mb-6">ملفي الشخصي</h2>
+                    <div id="profile-posts-container" class="space-y-6 max-w-3xl mx-auto"></div>
                 </div>
 
                 <!-- Create Post Section -->
-                <div id="create-post-section" class="app-section" style="display: none;">
-                     <div class="bg-gray-800 rounded-2xl p-8 max-w-2xl mx-auto shadow-lg">
+                <div id="create-post-section" class="app-section hidden">
+                     <div class="bg-gray-800 rounded-2xl p-8 max-w-3xl mx-auto shadow-lg">
                         <h2 class="text-3xl font-bold mb-6">إنشاء منشور جديد</h2>
                         <form id="create-post-form">
-                            <div class="mb-4">
-                                <label for="post-content" class="block text-gray-300 text-sm font-bold mb-2">محتوى المنشور:</label>
-                                <textarea id="post-content" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="بماذا تفكر؟"></textarea>
-                            </div>
-                            <div class="mb-6">
-                                <label for="video-url" class="block text-gray-300 text-sm font-bold mb-2">رابط فيديو (اختياري):</label>
-                                <input type="url" id="video-url" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="https://youtube.com/watch?v=...">
-                            </div>
-                            <div class="flex justify-end">
-                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full transition duration-300">
-                                    نشر
-                                </button>
+                            <textarea id="post-content" rows="5" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="بماذا تفكر؟"></textarea>
+                            <input type="url" id="video-url" class="w-full mt-4 bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="رابط فيديو يوتيوب (اختياري)">
+                            <div class="flex justify-end mt-4">
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full transition duration-300">نشر</button>
                             </div>
                         </form>
                     </div>
@@ -163,15 +193,33 @@
         </div>
     </div>
     
+    <!-- Comments Modal -->
+    <div id="comments-modal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold">التعليقات</h3>
+                <button onclick="closeCommentsModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="comments-container" class="space-y-4 mb-6 max-h-[50vh] overflow-y-auto pr-2">
+                <!-- Comments will be loaded here -->
+            </div>
+            <form id="comment-form">
+                <input type="hidden" id="comment-post-id">
+                <textarea id="comment-text" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="أضف تعليقًا..." required></textarea>
+                <div class="flex justify-end mt-2">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-5 rounded-full transition">تعليق</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script type="module">
-        // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, getDocs, where, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, getDocs, where, doc, setDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Configuration ---
-        // IMPORTANT: Replace with your actual Firebase config
+        // --- Firebase Config ---
         const firebaseConfig = JSON.parse(__firebase_config || '{}');
 
         // --- App Initialization ---
@@ -186,100 +234,63 @@
         const loginView = document.getElementById('login-view');
         const mainAppView = document.getElementById('main-app-view');
         const logoutButton = document.getElementById('logout-button');
-        const createPostForm = document.getElementById('create-post-form');
-
-        // --- Authentication Handling ---
         
-        // Listen for authentication state changes
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // User is signed in.
-                currentUser = {
-                    uid: user.uid,
-                    displayName: user.displayName || 'مستخدم جديد',
-                    email: user.email,
-                    photoURL: user.photoURL || 'https://placehold.co/96x96/1f2937/ffffff?text=U'
-                };
-                
-                // Save or update user profile in Firestore
-                const userRef = doc(db, "users", user.uid);
-                await setDoc(userRef, {
-                    displayName: currentUser.displayName,
-                    email: currentUser.email,
-                    photoURL: currentUser.photoURL
-                }, { merge: true });
-
-                console.log("User is logged in:", currentUser);
-                showMainApp();
-            } else {
-                // User is signed out.
-                currentUser = null;
-                console.log("User is logged out.");
-                showLoginView();
+        // --- FIX for Google Sign-In Loading ---
+        // This function is called by the Google GSI script once it's loaded.
+        window.onGoogleLibraryLoad = () => {
+            try {
+                google.accounts.id.initialize({
+                    client_id: "969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com",
+                    callback: handleCredentialResponse
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById("google-button-container"),
+                    { theme: "outline", size: "large", shape: "rectangular", locale: "ar" }
+                );
+            } catch (error) {
+                console.error("Google SDK initialization failed:", error);
+                document.getElementById('google-sdk-error').classList.remove('hidden');
             }
-        });
-        
-        // Function to decode JWT token
+        };
+
+        // --- Authentication ---
         function decodeJwtResponse(token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
+            var jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
             return JSON.parse(jsonPayload);
         }
 
-
-        // Google Sign-In handler
         window.handleCredentialResponse = async (response) => {
-            console.log("Encoded JWT ID token: " + response.credential);
-            
-            // For demonstration, we'll decode the token on the client to get user info
             const decodedToken = decodeJwtResponse(response.credential);
-            
-            const tempUser = {
-                uid: decodedToken.sub, // Google's user ID
+            const userProfile = {
+                uid: decodedToken.sub,
                 displayName: decodedToken.name,
                 email: decodedToken.email,
                 photoURL: decodedToken.picture,
             };
-
-            // In a real app, you would send `response.credential` to your backend,
-            // verify it, and your backend would create a custom Firebase token.
-            // For this demo, we can't generate a custom token on the client.
-            // We will proceed without custom token sign-in and manage state locally.
-            // This means auth state is not persisted via Firebase Auth, but we'll simulate it.
             
-            currentUser = tempUser;
-             // Save or update user profile in Firestore
-            const userRef = doc(db, "users", currentUser.uid);
-            await setDoc(userRef, {
-                displayName: currentUser.displayName,
-                email: currentUser.email,
-                photoURL: currentUser.photoURL
+            // This simulates a login session since we can't create custom tokens on the client.
+            // We save the user to Firestore and then proceed.
+            await setDoc(doc(db, "users", userProfile.uid), {
+                displayName: userProfile.displayName,
+                email: userProfile.email,
+                photoURL: userProfile.photoURL
             }, { merge: true });
 
-            console.log("User logged in with Google:", currentUser);
+            currentUser = userProfile;
             showMainApp();
         };
 
-        // Initialize Google Button
-        function initializeGoogleButton() {
-             if (typeof google !== 'undefined') {
-                google.accounts.id.initialize({
-                    client_id: "969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com",
-                    callback: window.handleCredentialResponse
-                });
-                google.accounts.id.renderButton(
-                    document.getElementById("google-button-container"),
-                    { theme: "outline", size: "large", type: "standard", text: "signin_with", shape: "rectangular", logo_alignment: "left", locale: "ar" }
-                );
-             } else {
-                console.log("Google library not loaded yet.");
-             }
-        }
+        logoutButton.addEventListener('click', () => {
+            currentUser = null;
+            if (typeof google !== 'undefined') {
+                 google.accounts.id.disableAutoSelect();
+            }
+            showLoginView();
+        });
 
-        // --- View Management ---
+        // --- View & UI Management ---
         function showLoginView() {
             loginView.classList.add('active');
             mainAppView.classList.remove('active');
@@ -288,181 +299,204 @@
         function showMainApp() {
             loginView.classList.remove('active');
             mainAppView.classList.add('active');
-            updateProfileUI();
-            navigateTo('feed'); // Default to feed view
+            updateSidebarUI();
+            navigateTo('feed');
+        }
+
+        function updateSidebarUI() {
+            if (!currentUser) return;
+            document.getElementById('sidebar-profile-pic').src = currentUser.photoURL;
+            document.getElementById('sidebar-profile-name').textContent = currentUser.displayName;
+            document.getElementById('sidebar-profile-email').textContent = currentUser.email;
         }
         
         window.navigateTo = (sectionId) => {
-            document.querySelectorAll('.app-section').forEach(section => {
-                section.style.display = 'none';
-            });
-            document.getElementById(`${sectionId}-section`).style.display = 'block';
+            document.querySelectorAll('.app-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`${sectionId}-section`).classList.remove('hidden');
             
-            if(sectionId === 'feed') loadFeedPosts();
-            if(sectionId === 'profile') loadProfilePosts();
-        }
-
-        // --- UI Updates ---
-        function updateProfileUI() {
-            if (currentUser) {
-                document.getElementById('profile-pic').src = currentUser.photoURL;
-                document.getElementById('profile-pic').onerror = () => { document.getElementById('profile-pic').src = 'https://placehold.co/128x128/1f2937/ffffff?text=User'; };
-                document.getElementById('profile-name').textContent = currentUser.displayName;
-                document.getElementById('profile-email').textContent = currentUser.email;
-            }
-        }
-
-        // --- Firestore Logic (Content Management) ---
-
-        // Create a new post
-        createPostForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUser) {
-                alert("يجب عليك تسجيل الدخول أولاً.");
-                return;
-            }
-
-            const content = document.getElementById('post-content').value.trim();
-            const videoUrl = document.getElementById('video-url').value.trim();
-
-            if (!content && !videoUrl) {
-                alert("لا يمكن إنشاء منشور فارغ.");
-                return;
-            }
-            
-            const postButton = createPostForm.querySelector('button[type="submit"]');
-            postButton.disabled = true;
-            postButton.textContent = 'جاري النشر...';
-
-            try {
-                await addDoc(collection(db, "posts"), {
-                    authorId: currentUser.uid,
-                    authorName: currentUser.displayName,
-                    authorPhoto: currentUser.photoURL,
-                    content: content,
-                    videoUrl: videoUrl,
-                    createdAt: new Date()
-                });
-                
-                // Clear form and navigate to feed
-                createPostForm.reset();
-                navigateTo('feed');
-
-            } catch (error) {
-                console.error("Error adding document: ", error);
-                alert("حدث خطأ أثناء نشر المنشور.");
-            } finally {
-                postButton.disabled = false;
-                postButton.textContent = 'نشر';
-            }
-        });
-
-        // Load all posts for the feed
-        async function loadFeedPosts() {
-            const container = document.getElementById('feed-posts-container');
-            container.innerHTML = '<p class="text-gray-400">يتم تحميل المنشورات...</p>';
-            
-            const postsQuery = query(collection(db, "posts"));
-            
-            // Use onSnapshot for real-time updates
-            onSnapshot(postsQuery, (querySnapshot) => {
-                const posts = [];
-                querySnapshot.forEach((doc) => {
-                    posts.push({ id: doc.id, ...doc.data() });
-                });
-                // Sort by date descending
-                posts.sort((a,b) => b.createdAt.toDate() - a.createdAt.toDate());
-                renderPosts(container, posts);
-            }, (error) => {
-                 console.error("Error fetching posts: ", error);
-                 container.innerHTML = '<p class="text-red-400">حدث خطأ في جلب المنشورات.</p>';
-            });
-        }
-
-        // Load posts for the current user's profile
-        async function loadProfilePosts() {
-            if (!currentUser) return;
-            const container = document.getElementById('profile-posts-container');
-            container.innerHTML = '<p class="text-gray-400">يتم تحميل منشوراتك...</p>';
-
-            const postsQuery = query(collection(db, "posts"), where("authorId", "==", currentUser.uid));
-            
-            onSnapshot(postsQuery, (querySnapshot) => {
-                const posts = [];
-                querySnapshot.forEach((doc) => {
-                    posts.push({ id: doc.id, ...doc.data() });
-                });
-                posts.sort((a,b) => b.createdAt.toDate() - a.createdAt.toDate());
-                renderPosts(container, posts);
-                 if (posts.length === 0) {
-                    container.innerHTML = '<p class="text-gray-400 text-center py-8">ليس لديك أي منشورات حتى الآن. قم بإنشاء أول منشور لك!</p>';
-                }
-            }, (error) => {
-                 console.error("Error fetching profile posts: ", error);
-                 container.innerHTML = '<p class="text-red-400">حدث خطأ في جلب منشوراتك.</p>';
-            });
+            if(sectionId === 'feed') loadPosts('feed');
+            if(sectionId === 'profile') loadPosts('profile');
         }
         
-        // Render posts into a container
-        function renderPosts(container, posts) {
-            container.innerHTML = ''; // Clear previous content
-            if (posts.length === 0 && container.id === 'feed-posts-container') {
-                container.innerHTML = '<p class="text-gray-400 text-center py-8">لا توجد منشورات لعرضها. كن أول من ينشر!</p>';
-            }
-            posts.forEach(post => {
-                const postElement = document.createElement('div');
-                postElement.className = 'bg-gray-800 rounded-2xl p-5 shadow-lg';
-                
-                // Convert YouTube URL to embeddable URL
-                let videoEmbedHtml = '';
-                if (post.videoUrl) {
-                    let embedUrl = post.videoUrl;
-                    if (embedUrl.includes("youtube.com/watch?v=")) {
-                        const videoId = embedUrl.split('v=')[1].split('&')[0];
-                        embedUrl = `https://www.youtube.com/embed/${videoId}`;
-                    } else if (embedUrl.includes("youtu.be/")) {
-                         const videoId = embedUrl.split('youtu.be/')[1].split('?')[0];
-                         embedUrl = `https://www.youtube.com/embed/${videoId}`;
-                    }
-                    // Basic validation for embeddable links
-                    if (embedUrl.includes('embed')) {
-                        videoEmbedHtml = `<div class="mt-4"><iframe class="post-video" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-                    }
-                }
-
-                postElement.innerHTML = `
+        function createSkeletonLoader() {
+            return `
+                <div class="bg-gray-800 rounded-2xl p-5 shadow-lg">
                     <div class="flex items-center mb-4">
-                        <img src="${post.authorPhoto || 'https://placehold.co/48x48/1f2937/ffffff?text=U'}" onerror="this.src='https://placehold.co/48x48/1f2937/ffffff?text=U'" alt="صورة الناشر" class="w-12 h-12 rounded-full mr-4 rtl:ml-4">
-                        <div>
-                            <p class="font-bold text-white">${post.authorName}</p>
-                            <p class="text-sm text-gray-400">${post.createdAt.toDate().toLocaleString('ar')}</p>
+                        <div class="w-12 h-12 rounded-full skeleton"></div>
+                        <div class="mr-4 flex-grow">
+                            <div class="h-4 w-1/3 skeleton mb-2"></div>
+                            <div class="h-3 w-1/4 skeleton"></div>
                         </div>
                     </div>
-                    <p class="text-gray-300 whitespace-pre-wrap">${post.content}</p>
-                    ${videoEmbedHtml}
-                `;
-                container.appendChild(postElement);
+                    <div class="h-4 w-full skeleton mb-2"></div>
+                    <div class="h-4 w-5/6 skeleton mb-4"></div>
+                    <div class="h-48 w-full skeleton"></div>
+                </div>
+            `;
+        }
+
+        // --- Firestore & Content Management ---
+        async function loadPosts(mode) {
+            if (!currentUser) return;
+            const containerId = mode === 'feed' ? 'feed-posts-container' : 'profile-posts-container';
+            const container = document.getElementById(containerId);
+            container.innerHTML = createSkeletonLoader() + createSkeletonLoader(); // Show skeletons
+
+            const postsQuery = mode === 'feed' 
+                ? query(collection(db, "posts"))
+                : query(collection(db, "posts"), where("authorId", "==", currentUser.uid));
+
+            onSnapshot(postsQuery, (snapshot) => {
+                const posts = [];
+                snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+                posts.sort((a,b) => b.createdAt.toDate() - a.createdAt.toDate());
+                renderPosts(container, posts);
             });
         }
-        
-        // --- Event Listeners ---
-        logoutButton.addEventListener('click', () => {
-            // Since we are not using Firebase Auth session, we just simulate logout
-            currentUser = null;
-            // Optionally, revoke Google token
-            if (typeof google !== 'undefined') {
-                 google.accounts.id.disableAutoSelect();
+
+        function renderPosts(container, posts) {
+            container.innerHTML = '';
+            if (posts.length === 0) {
+                container.innerHTML = `<p class="text-gray-400 text-center py-8">لا توجد منشورات لعرضها.</p>`;
+                return;
             }
-            showLoginView();
+            posts.forEach(post => container.appendChild(createPostElement(post)));
+        }
+
+        function createPostElement(post) {
+            const element = document.createElement('div');
+            element.className = 'bg-gray-800 rounded-2xl p-5 shadow-lg animate-fadeIn';
+            
+            const videoEmbedHtml = post.videoUrl ? getVideoEmbed(post.videoUrl) : '';
+            const isLiked = post.likes?.includes(currentUser.uid);
+
+            element.innerHTML = `
+                <div class="flex items-center mb-4">
+                    <img src="${post.authorPhoto}" class="w-12 h-12 rounded-full mr-4 rtl:ml-4 border-2 border-gray-600">
+                    <div>
+                        <p class="font-bold text-white">${post.authorName}</p>
+                        <p class="text-sm text-gray-400">${post.createdAt.toDate().toLocaleString('ar')}</p>
+                    </div>
+                </div>
+                <p class="text-gray-300 whitespace-pre-wrap mb-4">${post.content}</p>
+                ${videoEmbedHtml}
+                <div class="mt-4 pt-4 border-t border-gray-700 flex items-center space-x-6 rtl:space-x-reverse">
+                    <button class="like-btn flex items-center space-x-2 rtl:space-x-reverse text-gray-400 hover:text-red-500 transition" data-postid="${post.id}">
+                        <i class="${isLiked ? 'fas fa-heart text-red-500' : 'far fa-heart'}"></i>
+                        <span>${post.likes?.length || 0}</span>
+                    </button>
+                    <button class="comment-btn flex items-center space-x-2 rtl:space-x-reverse text-gray-400 hover:text-indigo-400 transition" data-postid="${post.id}">
+                        <i class="far fa-comment"></i>
+                        <span>${post.commentCount || 0}</span>
+                    </button>
+                </div>
+            `;
+            
+            element.querySelector('.like-btn').addEventListener('click', () => toggleLike(post.id));
+            element.querySelector('.comment-btn').addEventListener('click', () => openCommentsModal(post.id));
+            return element;
+        }
+        
+        function getVideoEmbed(url) {
+            let videoId;
+            if (url.includes("youtube.com/watch?v=")) videoId = url.split('v=')[1].split('&')[0];
+            else if (url.includes("youtu.be/")) videoId = url.split('youtu.be/')[1].split('?')[0];
+            
+            if (videoId) return `<div class="mt-4"><iframe class="post-video" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+            return '';
+        }
+
+        document.getElementById('create-post-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const content = document.getElementById('post-content').value.trim();
+            const videoUrl = document.getElementById('video-url').value.trim();
+            if (!content && !videoUrl) return;
+
+            await addDoc(collection(db, "posts"), {
+                authorId: currentUser.uid,
+                authorName: currentUser.displayName,
+                authorPhoto: currentUser.photoURL,
+                content: content,
+                videoUrl: videoUrl,
+                createdAt: new Date(),
+                likes: [],
+                commentCount: 0
+            });
+            e.target.reset();
+            navigateTo('feed');
         });
 
-        // --- Initial Load ---
-        window.onload = () => {
-            document.getElementById('year').textContent = new Date().getFullYear();
-            initializeGoogleButton();
+        // --- Like & Comment Logic ---
+        async function toggleLike(postId) {
+            if (!currentUser) return;
+            const postRef = doc(db, "posts", postId);
+            const postSnap = await getDoc(postRef);
+            if (!postSnap.exists()) return;
+
+            const isLiked = postSnap.data().likes?.includes(currentUser.uid);
+            await updateDoc(postRef, {
+                likes: isLiked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid)
+            });
+        }
+
+        window.openCommentsModal = async (postId) => {
+            const modal = document.getElementById('comments-modal');
+            const container = document.getElementById('comments-container');
+            document.getElementById('comment-post-id').value = postId;
+            container.innerHTML = `<p class="text-gray-400">تحميل التعليقات...</p>`;
+            modal.classList.add('open');
+            
+            const commentsQuery = query(collection(db, `posts/${postId}/comments`));
+            onSnapshot(commentsQuery, (snapshot) => {
+                container.innerHTML = '';
+                if (snapshot.empty) {
+                    container.innerHTML = `<p class="text-gray-400 text-center">لا توجد تعليقات. كن أول من يعلق!</p>`;
+                } else {
+                    snapshot.docs.sort((a,b) => a.data().createdAt.toDate() - b.data().createdAt.toDate()).forEach(doc => {
+                        const comment = doc.data();
+                        const commentEl = document.createElement('div');
+                        commentEl.className = 'flex items-start space-x-3 rtl:space-x-reverse';
+                        commentEl.innerHTML = `
+                            <img src="${comment.authorPhoto}" class="w-10 h-10 rounded-full">
+                            <div class="bg-gray-700 rounded-lg p-3 flex-grow">
+                                <p class="font-bold text-sm">${comment.authorName}</p>
+                                <p class="text-gray-300">${comment.text}</p>
+                            </div>
+                        `;
+                        container.appendChild(commentEl);
+                    });
+                }
+            });
         };
 
-    </script>
+        window.closeCommentsModal = () => document.getElementById('comments-modal').classList.remove('open');
 
+        document.getElementById('comment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const postId = document.getElementById('comment-post-id').value;
+            const text = document.getElementById('comment-text').value.trim();
+            if (!text || !postId || !currentUser) return;
+            
+            // Add comment to subcollection
+            await addDoc(collection(db, `posts/${postId}/comments`), {
+                authorId: currentUser.uid,
+                authorName: currentUser.displayName,
+                authorPhoto: currentUser.photoURL,
+                text: text,
+                createdAt: new Date()
+            });
+            
+            // Update comment count on post
+            const postRef = doc(db, "posts", postId);
+            const postSnap = await getDoc(postRef);
+            const currentCount = postSnap.data().commentCount || 0;
+            await updateDoc(postRef, { commentCount: currentCount + 1 });
+
+            e.target.reset();
+        });
+        
+        // --- Initial Load ---
+        // The Google script will call onGoogleLibraryLoad when it's ready.
+    </script>
 </body>
 </html>
