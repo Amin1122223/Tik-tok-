@@ -3,308 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تجربة تسجيل دخول مبهرة</title>
-    
-    <!-- معرّف العميل الخاص بك من Google Cloud Console -->
-    <meta name="google-signin-client_id" content="969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com">
-    
-    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <title>أداة النشر التلقائي في Blogger بواسطة Gemini</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Google API Client Library -->
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 
     <style>
-        :root {
-            --glow-color: hsl(270, 95%, 75%);
-            --card-bg: rgba(20, 15, 35, 0.65);
-            --text-color: #f0f0f0;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        /* Custom styles for the application */
         body {
             font-family: 'Cairo', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #030014;
-            color: var(--text-color);
-            overflow: hidden;
-            perspective: 1000px; /* Essential for 3D transforms */
+            background-color: #f1f5f9; /* slate-100 */
         }
-
-        /* ----- Interactive Particle Background ----- */
-        #particle-canvas {
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
+        .btn {
+            @apply px-6 py-2 rounded-lg font-semibold text-white shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2;
         }
-
-        /* ----- 3D Card Flip Container ----- */
-        .card-container {
-            width: 90%;
-            max-width: 450px;
-            height: 600px;
+        .btn-primary {
+            @apply bg-blue-600 hover:bg-blue-700 focus:ring-blue-500;
         }
-
+        .btn-secondary {
+            @apply bg-gray-500 hover:bg-gray-600 focus:ring-gray-400;
+        }
+        .btn-success {
+            @apply bg-green-600 hover:bg-green-700 focus:ring-green-500;
+        }
+        .btn-danger {
+            @apply bg-red-600 hover:bg-red-700 focus:ring-red-500;
+        }
         .card {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+            @apply bg-white rounded-xl shadow-lg p-6 my-4 transition-all duration-300;
         }
-
-        .card.is-flipped {
-            transform: rotateY(180deg);
-        }
-
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            background: var(--card-bg);
-            border-radius: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            box-shadow: 0 0 20px rgba(0,0,0,0.2), 0 0 40px var(--glow-color), inset 0 0 15px rgba(255,255,255,0.05);
-            text-align: center;
-        }
-
-        .card-face--back {
-            transform: rotateY(180deg);
-            padding: 0;
-            justify-content: flex-start;
-        }
-
-        /* ----- Login Face Styling ----- */
-        .card-face--front h2 {
-            font-size: 2.8rem;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 10px var(--glow-color);
-        }
-
-        .card-face--front p {
-            font-size: 1rem;
-            opacity: 0.8;
-            margin-bottom: 2.5rem;
-            max-width: 300px;
-        }
-
-        .google-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 14px 28px;
-            background-color: #fff;
-            border-radius: 12px;
-            color: #333;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-        .google-btn:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
-        .google-btn svg { margin-left: 12px; width: 24px; height: 24px; }
-        .g-signin2 { display: none !important; }
-
-        /* ----- Profile Face Styling (Back) ----- */
-        .profile-cover {
-            width: 100%;
-            height: 180px;
-            background: linear-gradient(45deg, hsl(270, 95%, 65%), hsl(320, 95%, 65%));
-            border-radius: 25px 25px 0 0;
-            position: relative;
-        }
-        .profile-pic-back {
-            width: 120px;
-            height: 120px;
+        .loader {
+            border: 5px solid #f3f3f3; /* Light grey */
+            border-top: 5px solid #3498db; /* Blue */
             border-radius: 50%;
-            border: 5px solid var(--card-bg);
-            position: absolute;
-            bottom: -60px;
-            left: 50%;
-            transform: translateX(-50%);
-            box-shadow: 0 0 20px var(--glow-color);
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
         }
-        .profile-content {
-            padding: 80px 30px 30px;
-            width: 100%;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        #profile-name-back { font-size: 1.8rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; }
-        #profile-email-back { font-size: 0.9rem; opacity: 0.7; margin-bottom: 1.5rem; }
-        .profile-bio { font-size: 1rem; margin-bottom: 1.5rem; line-height: 1.6; opacity: 0.9; }
-        .social-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 2rem; }
-        .social-links a { color: var(--text-color); font-size: 1.5rem; transition: all 0.3s ease; }
-        .social-links a:hover { color: var(--glow-color); transform: scale(1.2); }
-        .logout-btn-back {
-            background: none; border: 1px solid var(--glow-color); color: var(--glow-color);
-            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .logout-btn-back:hover { background: var(--glow-color); color: #030014; box-shadow: 0 0 15px var(--glow-color); }
     </style>
 </head>
-<body>
-    <canvas id="particle-canvas"></canvas>
+<body class="bg-slate-100 text-slate-800">
 
-    <div class="card-container">
-        <div class="card" id="card">
-            <!-- Face 1: Login Form -->
-            <div class="card-face card-face--front">
-                <h2>انضم لمجتمعنا</h2>
-                <p>استخدم حسابك في Google للوصول الفوري إلى عالم من الإمكانيات المذهلة.</p>
-                <button class="google-btn" onclick="document.querySelector('.g-signin2 > div').click();">
-                    <span>المتابعة باستخدام Google</span>
-                    <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.712,34.464,44,28.756,44,24c0,22.659,0.138,21.35-0.389,20.083z"></path></svg>
+    <!-- Main Container -->
+    <div id="main-container" class="container mx-auto max-w-4xl p-4 sm:p-6">
+
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6 pb-4 border-b border-slate-300">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-700">أداة النشر التلقائي في Blogger</h1>
+                <p class="text-slate-500">بواسطة Gemini AI</p>
+            </div>
+            <!-- Auth Status & Controls -->
+            <div id="auth-status" class="flex items-center space-x-4 rtl:space-x-reverse">
+                <!-- This will be populated by JavaScript -->
+            </div>
+        </header>
+
+        <!-- Login Section -->
+        <div id="login-section" class="text-center card">
+            <h2 class="text-xl font-semibold mb-4">مرحباً بك!</h2>
+            <p class="text-slate-600 mb-6">الرجاء تسجيل الدخول بحساب Google الخاص بك للوصول إلى مدوناتك.</p>
+            <button id="authorize_button" class="btn btn-primary inline-flex items-center space-x-2 rtl:space-x-reverse">
+                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.244,44,30.038,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+                <span>تسجيل الدخول بواسطة Google</span>
+            </button>
+        </div>
+
+        <!-- Main Application Section (hidden by default) -->
+        <div id="app-section" class="hidden">
+            
+            <!-- Step 1: Generate Article -->
+            <div class="card">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">الخطوة 1: توليد مقال</h2>
+                <div class="mb-4">
+                    <label for="article-topic" class="block font-semibold mb-2 text-slate-700">موضوع المقال:</label>
+                    <input type="text" id="article-topic" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="مثال: أهمية الذكاء الاصطناعي في التسويق الرقمي">
+                </div>
+                <button id="generate-btn" class="btn btn-primary">
+                    <span id="generate-btn-text">توليد المقال</span>
+                    <div id="generate-spinner" class="hidden w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 </button>
-                <div class="g-signin2" data-onsuccess="onSignIn"></div>
             </div>
 
-            <!-- Face 2: Profile Page -->
-            <div class="card-face card-face--back">
-                <header class="profile-cover">
-                    <img id="profile-pic-back" src="" alt="صورة الملف الشخصي" class="profile-pic-back">
-                </header>
-                <main class="profile-content">
-                    <h2 id="profile-name-back"></h2>
-                    <p id="profile-email-back"></p>
-                    <p class="profile-bio">
-                        هذه سيرة ذاتية قصيرة. مطور ويب وشغوف بالتقنيات الحديثة وتصميم تجارب مستخدم مبتكرة.
-                    </p>
-                    <div class="social-links">
-                        <a href="#" title="Twitter"> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> </a>
-                        <a href="#" title="GitHub"> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.91 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg> </a>
-                        <a href="#" title="LinkedIn"> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg> </a>
-                    </div>
-                    <button class="logout-btn-back" onclick="signOut();">تسجيل الخروج</button>
-                </main>
+            <!-- Step 2: Review and Publish -->
+            <div id="publish-card" class="card hidden">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">الخطوة 2: مراجعة ونشر</h2>
+                
+                <div class="mb-4">
+                    <label for="blog-select" class="block font-semibold mb-2 text-slate-700">اختر المدونة للنشر فيها:</label>
+                    <select id="blog-select" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500">
+                        <!-- Blog options will be populated here -->
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="article-title" class="block font-semibold mb-2 text-slate-700">عنوان المقال:</label>
+                    <input type="text" id="article-title" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="article-content" class="block font-semibold mb-2 text-slate-700">محتوى المقال (HTML):</label>
+                    <textarea id="article-content" rows="15" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <button id="publish-btn" class="btn btn-success">
+                    <span id="publish-btn-text">نشر في Blogger</span>
+                    <div id="publish-spinner" class="hidden w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </button>
             </div>
+        </div>
+
+    </div>
+
+    <!-- Modal for notifications -->
+    <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-center">
+            <div id="modal-icon" class="mx-auto mb-4"></div>
+            <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
+            <p id="modal-message" class="text-slate-600 mb-6"></p>
+            <a id="modal-link" href="#" target="_blank" class="btn btn-primary hidden">عرض المنشور</a>
+            <button id="modal-close-btn" class="btn btn-secondary mt-4">إغلاق</button>
         </div>
     </div>
 
-    <script>
-        // ----- Google Auth Functions -----
-        function onSignIn(googleUser) {
-            const profile = googleUser.getBasicProfile();
-            
-            // Populate profile card (the back face)
-            document.getElementById('profile-pic-back').src = profile.getImageUrl();
-            document.getElementById('profile-name-back').innerText = profile.getName();
-            document.getElementById('profile-email-back').innerText = profile.getEmail();
-            
-            // Flip the card
-            document.getElementById('card').classList.add('is-flipped');
+    <script type="text/javascript">
+        // Configuration variables provided by the user
+        const API_KEY = 'AIzaSyCckxLP-wDTrFop_7EELhAGZmT7h4dw0wM';
+        const CLIENT_ID = '329662306799-jphpgpts06t60pheok0arb8iss0g2pvv.apps.googleusercontent.com';
+        
+        // IMPORTANT SECURITY NOTE: The Client Secret is NOT used here.
+        // It should never be exposed in client-side code (like this HTML file).
+        // The OAuth 2.0 flow for web clients is designed to work securely with only the Client ID.
+
+        // Scopes define the permissions the app is requesting
+        const SCOPES = 'https://www.googleapis.com/auth/blogger https://www.googleapis.com/auth/userinfo.profile';
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+
+        // UI Elements
+        const authorizeButton = document.getElementById('authorize_button');
+        const signoutButton = document.createElement('button');
+        signoutButton.className = 'btn btn-danger';
+        signoutButton.textContent = 'تسجيل الخروج';
+        signoutButton.onclick = handleSignoutClick;
+
+        const loginSection = document.getElementById('login-section');
+        const appSection = document.getElementById('app-section');
+        const authStatusDiv = document.getElementById('auth-status');
+        const blogSelect = document.getElementById('blog-select');
+        const generateBtn = document.getElementById('generate-btn');
+        const publishBtn = document.getElementById('publish-btn');
+        const publishCard = document.getElementById('publish-card');
+        const articleTopicInput = document.getElementById('article-topic');
+        const articleTitleInput = document.getElementById('article-title');
+        const articleContentInput = document.getElementById('article-content');
+
+        // Modal Elements
+        const modal = document.getElementById('notification-modal');
+        const modalIcon = document.getElementById('modal-icon');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalLink = document.getElementById('modal-link');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        modalCloseBtn.onclick = () => modal.classList.add('hidden');
+
+        /**
+         * Callback after the GAPI client library has loaded.
+         */
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
         }
 
-        function signOut() {
-            const auth2 = gapi.auth2.getAuthInstance();
-            auth2.signOut().then(function () {
-                console.log('User signed out.');
-                // Flip the card back
-                document.getElementById('card').classList.remove('is-flipped');
+        /**
+         * Callback after the GIS library has loaded.
+         */
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // defined later
             });
+            gisInited = true;
+            maybeEnableButtons();
         }
 
-        // ----- Interactive Particle Background Script -----
-        window.onload = function() {
-            const canvas = document.getElementById('particle-canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            let particles = [];
-            const particleCount = 100;
-            const maxDistance = 100;
-            let mouse = { x: null, y: null };
-
-            window.addEventListener('mousemove', (event) => {
-                mouse.x = event.x;
-                mouse.y = event.y;
+        /**
+         * Initializes the GAPI client.
+         */
+        async function initializeGapiClient() {
+            // The API key is not required for initializing the Blogger client,
+            // as all operations are authenticated via OAuth2. The user's access
+            // token will be used to make requests, which prevents API key errors.
+            await gapi.client.init({
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/blogger/v3/rest'],
             });
-             window.addEventListener('resize', () => {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            });
+            gapiInited = true;
+            maybeEnableButtons();
+        }
 
-            class Particle {
-                constructor(x, y, size, color, speedX, speedY) {
-                    this.x = x; this.y = y; this.size = size; this.color = color;
-                    this.speedX = speedX; this.speedY = speedY;
+        /**
+         * Enables user interaction after all libraries are loaded.
+         */
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                authorizeButton.onclick = handleAuthClick;
+            }
+        }
+
+        /**
+         * Sign in the user upon button click.
+         */
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    throw (resp);
                 }
-                draw() {
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.fillStyle = this.color;
-                    ctx.fill();
+                await updateUiWithUserInfo();
+            };
+
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } else {
+                tokenClient.requestAccessToken({ prompt: '' });
+            }
+        }
+
+        /**
+         * Sign out the user upon button click.
+         */
+        function handleSignoutClick() {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+                updateUiForSignedOutState();
+            }
+        }
+
+        /**
+         * Updates the UI to reflect the signed-in state.
+         */
+        async function updateUiWithUserInfo() {
+            loginSection.classList.add('hidden');
+            appSection.classList.remove('hidden');
+
+            // Fetch user profile
+            const userInfoResponse = await gapi.client.oauth2.userinfo.get();
+            const profile = userInfoResponse.result;
+            
+            authStatusDiv.innerHTML = ''; // Clear previous content
+            const profileDiv = document.createElement('div');
+            profileDiv.className = 'flex items-center space-x-2 rtl:space-x-reverse';
+            profileDiv.innerHTML = `
+                <span class="font-semibold hidden sm:block">${profile.name}</span>
+                <img src="${profile.picture}" class="w-10 h-10 rounded-full border-2 border-white shadow-md">
+            `;
+            authStatusDiv.appendChild(profileDiv);
+            authStatusDiv.appendChild(signoutButton);
+            
+            await loadUserBlogs();
+        }
+
+        /**
+         * Updates the UI to reflect the signed-out state.
+         */
+        function updateUiForSignedOutState() {
+            appSection.classList.add('hidden');
+            publishCard.classList.add('hidden');
+            loginSection.classList.remove('hidden');
+            authStatusDiv.innerHTML = '';
+            blogSelect.innerHTML = '';
+            articleTopicInput.value = '';
+            articleTitleInput.value = '';
+            articleContentInput.value = '';
+        }
+
+        /**
+         * Fetches and populates the user's blogs into the select dropdown.
+         */
+        async function loadUserBlogs() {
+            try {
+                const response = await gapi.client.blogger.blogs.list({
+                    userId: 'self'
+                });
+                const blogs = response.result.items;
+                blogSelect.innerHTML = '';
+                if (blogs && blogs.length > 0) {
+                    blogs.forEach(blog => {
+                        const option = document.createElement('option');
+                        option.value = blog.id;
+                        option.textContent = blog.name;
+                        blogSelect.appendChild(option);
+                    });
+                } else {
+                    showNotification('error', 'لم يتم العثور على مدونات', 'لم نتمكن من العثور على أي مدونات مرتبطة بحسابك.');
                 }
-                update() {
-                    if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX;
-                    if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY;
-                    this.x += this.speedX;
-                    this.y += this.speedY;
-                }
+            } catch (err) {
+                console.error("Error fetching blogs:", err);
+                showNotification('error', 'خطأ في جلب المدونات', err.result?.error?.message || 'حدث خطأ غير متوقع.');
+            }
+        }
+
+        /**
+         * Handles the article generation process.
+         */
+        generateBtn.addEventListener('click', async () => {
+            const topic = articleTopicInput.value.trim();
+            if (!topic) {
+                showNotification('warning', 'موضوع فارغ', 'الرجاء إدخال موضوع للمقال أولاً.');
+                return;
             }
 
-            function init() {
-                particles = [];
-                for (let i = 0; i < particleCount; i++) {
-                    const size = Math.random() * 2 + 1;
-                    const x = Math.random() * (canvas.width - size * 2) + size;
-                    const y = Math.random() * (canvas.height - size * 2) + size;
-                    const speedX = (Math.random() * 0.5) - 0.25;
-                    const speedY = (Math.random() * 0.5) - 0.25;
-                    const color = 'rgba(170, 140, 255, 0.7)';
-                    particles.push(new Particle(x, y, size, color, speedX, speedY));
+            setLoadingState(generateBtn, true);
+
+            try {
+                const prompt = `اكتب مقالاً مفصلاً واحترافياً باللغة العربية حول الموضوع التالي: "${topic}".
+                يجب أن يكون المقال منسقاً بشكل جيد باستخدام HTML.
+                ابدأ بعنوان جذاب داخل وسم <h1>.
+                قسم المقال إلى فقرات متعددة باستخدام وسوم <p>.
+                استخدم وسوم <h2> للعناوين الفرعية لتقسيم المحتوى.
+                يمكنك استخدام <ul> و <li> للقوائم النقطية إذا كان ذلك مناسبًا.
+                لا تقم بتضمين أي شيء قبل وسم <h1> أو بعد إغلاق المقال.
+                المقال يجب أن يكون جاهزاً للنشر مباشرة.`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
                 }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0) {
+                    const fullContent = result.candidates[0].content.parts[0].text;
+                    
+                    // Extract title from <h1> tag
+                    const titleMatch = fullContent.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+                    const title = titleMatch ? titleMatch[1].trim() : topic;
+                    
+                    // The rest of the content
+                    const content = fullContent.replace(/<h1[^>]*>[\s\S]*?<\/h1>/i, '').trim();
+
+                    articleTitleInput.value = title;
+                    articleContentInput.value = content;
+                    publishCard.classList.remove('hidden');
+
+                } else {
+                    throw new Error("لم يتمكن النموذج من توليد محتوى. حاول مرة أخرى.");
+                }
+
+            } catch (error) {
+                console.error('Error generating article:', error);
+                showNotification('error', 'خطأ في توليد المقال', error.message);
+            } finally {
+                setLoadingState(generateBtn, false);
+            }
+        });
+
+        /**
+         * Handles the post publishing process.
+         */
+        publishBtn.addEventListener('click', async () => {
+            const blogId = blogSelect.value;
+            const title = articleTitleInput.value.trim();
+            const content = articleContentInput.value.trim();
+
+            if (!blogId || !title || !content) {
+                showNotification('warning', 'معلومات ناقصة', 'الرجاء التأكد من اختيار مدونة وملء العنوان والمحتوى.');
+                return;
             }
 
-            function connect() {
-                let opacityValue = 1;
-                for (let a = 0; a < particles.length; a++) {
-                    for (let b = a; b < particles.length; b++) {
-                        const distance = ((particles[a].x - particles[b].x) * (particles[a].x - particles[b].x))
-                                     + ((particles[a].y - particles[b].y) * (particles[a].y - particles[b].y));
-                        if (distance < (maxDistance * maxDistance)) {
-                            opacityValue = 1 - (distance / (maxDistance*maxDistance));
-                            ctx.strokeStyle = `rgba(170, 140, 255, ${opacityValue})`;
-                            ctx.lineWidth = 1;
-                            ctx.beginPath();
-                            ctx.moveTo(particles[a].x, particles[a].y);
-                            ctx.lineTo(particles[b].x, particles[b].y);
-                            ctx.stroke();
-                        }
+            setLoadingState(publishBtn, true);
+
+            try {
+                const response = await gapi.client.blogger.posts.insert({
+                    blogId: blogId,
+                    resource: {
+                        title: title,
+                        content: content
                     }
-                }
-            }
+                });
+                
+                console.log("Post published:", response.result);
+                showNotification('success', 'تم النشر بنجاح!', 'تم نشر مقالك بنجاح في مدونتك.', response.result.url);
 
-            function animate() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                for (const particle of particles) {
-                    particle.update();
-                    particle.draw();
-                }
-                connect();
-                requestAnimationFrame(animate);
+            } catch (err) {
+                console.error("Error publishing post:", err);
+                showNotification('error', 'خطأ في النشر', err.result?.error?.message || 'حدث خطأ غير متوقع أثناء النشر.');
+            } finally {
+                setLoadingState(publishBtn, false);
             }
+        });
 
-            init();
-            animate();
-        };
+        /**
+         * Toggles loading state for a button.
+         * @param {HTMLElement} button The button element.
+         * @param {boolean} isLoading True to show loader, false to hide.
+         */
+        function setLoadingState(button, isLoading) {
+            const text = button.querySelector('span');
+            const spinner = button.querySelector('div');
+            if (isLoading) {
+                button.disabled = true;
+                text.classList.add('hidden');
+                spinner.classList.remove('hidden');
+            } else {
+                button.disabled = false;
+                text.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Shows a notification modal.
+         * @param {'success'|'error'|'warning'} type The type of notification.
+         * @param {string} title The modal title.
+         * @param {string} message The modal message.
+         * @param {string|null} link An optional link for the modal.
+         */
+        function showNotification(type, title, message, link = null) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+
+            // Reset icon and link
+            modalIcon.innerHTML = '';
+            modalLink.classList.add('hidden');
+
+            let iconSvg = '';
+            if (type === 'success') {
+                iconSvg = `<svg class="w-16 h-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                if (link) {
+                    modalLink.href = link;
+                    modalLink.classList.remove('hidden');
+                }
+            } else if (type === 'error') {
+                iconSvg = `<svg class="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else { // warning
+                iconSvg = `<svg class="w-16 h-16 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+            }
+            modalIcon.innerHTML = iconSvg;
+            modal.classList.remove('hidden');
+        }
 
     </script>
 </body>
