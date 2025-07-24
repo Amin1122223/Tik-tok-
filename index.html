@@ -160,10 +160,12 @@
         const messageBox = document.getElementById('message-box');
 
         // --- State ---
-        let gapiClient;
         let tokenClient;
         let userProfile = null;
-        const GOOGLE_CLIENT_ID = '969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com';
+        // Client ID for Google Sign-In (used in HTML)
+        const GOOGLE_SIGN_IN_CLIENT_ID = '969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com';
+        // Client ID specifically for Blogger API access
+        const GOOGLE_BLOGGER_CLIENT_ID = '329662306799-jphpgpts06t60pheok0arb8iss0g2pvv.apps.googleusercontent.com';
         const BLOGGER_SCOPE = 'https://www.googleapis.com/auth/blogger';
 
         // --- Utility Functions ---
@@ -281,12 +283,14 @@
 
         // --- Blogger API ---
         async function initializeGapiClient() {
+            // Initialize the gapi client
             await gapi.client.init({
-                clientId: GOOGLE_CLIENT_ID,
+                // No client ID needed here for initialization, token will be provided with each request
                 discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/blogger/v3/rest'],
             });
+            // Initialize the token client with the Blogger-specific Client ID
             tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: GOOGLE_CLIENT_ID,
+                client_id: GOOGLE_BLOGGER_CLIENT_ID,
                 scope: BLOGGER_SCOPE,
                 callback: '', // defined later
             });
@@ -302,6 +306,7 @@
                 bloggerPublishSection.classList.remove('hidden');
                 await listBlogs();
             };
+            // Ask for consent for the Blogger scope
             tokenClient.requestAccessToken({ prompt: 'consent' });
         });
 
