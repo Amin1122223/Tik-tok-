@@ -3,181 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أداة النشر التلقائي في بلوجر مع Gemini</title>
+    <title>منصة التواصل الاجتماعي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
         body {
             font-family: 'Cairo', sans-serif;
+            background-color: #15202B;
+            color: #F7F9F9;
         }
-        .gradient-bg {
-            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        .sidebar-link {
+            @apply flex items-center gap-4 p-3 rounded-full hover:bg-gray-800 transition-colors cursor-pointer;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        .post-card {
+            @apply bg-gray-900 border border-gray-700 rounded-xl p-4;
         }
         .btn-primary {
-            @apply w-full text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center;
-            background: linear-gradient(to right, #3b82f6, #6366f1);
-            box-shadow: 0 4px 15px 0 rgba(59, 130, 246, 0.4);
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
+            @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed;
         }
         .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3b82f6;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid #3B82F6;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 24px;
+            height: 24px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-white">
+<body class="w-full h-screen overflow-hidden">
 
-    <div id="main-container" class="min-h-screen flex flex-col items-center justify-center p-4">
-
-        <!-- Login Section -->
-        <div id="login-section" class="w-full max-w-md text-center">
-            <div class="glass-card p-8 rounded-2xl shadow-lg">
-                <h1 class="text-3xl font-bold mb-2">أداة النشر الذكي</h1>
-                <p class="text-gray-300 mb-6">أنشئ وانشر مقالاتك في Blogger بلمسة زر</p>
-                <div id="g_id_onload"
-                     data-client_id="969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com"
-                     data-callback="handleSignIn"
-                     data-auto_prompt="false">
-                </div>
-                <div class="g_id_signin"
-                     data-type="standard"
-                     data-shape="rectangular"
-                     data-theme="outline"
-                     data-text="signin_with"
-                     data-size="large"
-                     data-logo_alignment="left">
-                </div>
-                <p class="text-xs text-gray-500 mt-4">ملاحظة: تسجيل الدخول مطلوب للوصول إلى حسابك في Blogger.</p>
+    <!-- Login Section -->
+    <div id="login-section" class="flex items-center justify-center h-full">
+        <div class="text-center p-8 bg-gray-900 rounded-2xl shadow-lg max-w-sm mx-auto">
+            <h1 class="text-3xl font-bold mb-2">منصة التواصل الاجتماعي</h1>
+            <p class="text-gray-400 mb-6">شارك أفكارك مع العالم</p>
+            <div id="g_id_onload"
+                 data-client_id="969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com"
+                 data-callback="handleSignIn"
+                 data-auto_prompt="false">
             </div>
-        </div>
-
-        <!-- App Section -->
-        <div id="app-section" class="hidden w-full max-w-4xl">
-            <div class="flex justify-between items-center mb-6">
-                <div id="user-info" class="flex items-center gap-3">
-                    <!-- User info will be populated by JS -->
-                </div>
-                <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">تسجيل الخروج</button>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="outline"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left">
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Generation Card -->
-                <div class="glass-card p-6 rounded-2xl">
-                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-                        1. إنشاء المقال
-                    </h2>
-                    <div class="space-y-4">
-                        <label for="prompt" class="block font-semibold text-gray-300">اكتب فكرة المقال أو موضوعه:</label>
-                        <textarea id="prompt" rows="4" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="مثال: أفضل 5 وجهات سياحية في المغرب لفصل الصيف"></textarea>
-                        <button id="generate-button" class="btn-primary">
-                            <span id="generate-btn-text">أنشئ المقال بواسطة Gemini</span>
-                            <div id="generate-loader" class="hidden loader w-6 h-6 border-2"></div>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Publishing Card -->
-                <div class="glass-card p-6 rounded-2xl">
-                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8 8 8 0 0 1-8-8z"/><path d="M10 9.5a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0z"/><path d="M14 15.5a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0z"/></svg>
-                        2. النشر في Blogger
-                    </h2>
-                    <div id="blogger-auth-section" class="space-y-4">
-                        <p class="text-gray-400">يجب السماح للتطبيق بالوصول إلى حسابك في Blogger.</p>
-                        <button id="authorize-blogger-button" class="btn-primary bg-orange-500" style="background: linear-gradient(to right, #f97316, #ea580c);">السماح بالوصول إلى Blogger</button>
-                    </div>
-                    <div id="blogger-publish-section" class="hidden space-y-4">
-                         <label for="blog-select" class="block font-semibold text-gray-300">اختر مدونتك:</label>
-                         <select id="blog-select" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option>الرجاء الانتظار، جاري تحميل المدونات...</option>
-                         </select>
-                         <button id="publish-button" class="btn-primary">
-                            <span id="publish-btn-text">نشر المقال الآن</span>
-                            <div id="publish-loader" class="hidden loader w-6 h-6 border-2"></div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Editor Card -->
-            <div class="glass-card p-6 rounded-2xl mt-6">
-                <h2 class="text-2xl font-bold mb-4">3. تحرير المحتوى</h2>
-                <div class="space-y-4">
-                    <label for="article-title" class="block font-semibold text-gray-300">عنوان المقال:</label>
-                    <input type="text" id="article-title" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="سيتم إنشاء العنوان هنا...">
-                    
-                    <label for="article-content" class="block font-semibold text-gray-300">محتوى المقال:</label>
-                    <textarea id="article-content" rows="15" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="سيتم إنشاء محتوى المقال هنا... يمكنك تعديله قبل النشر."></textarea>
-                </div>
-            </div>
-            
-            <!-- Message Area -->
-            <div id="message-box" class="hidden mt-4 p-4 rounded-lg text-center font-semibold"></div>
-
         </div>
     </div>
 
-    <script>
+    <!-- App Section -->
+    <div id="app-section" class="hidden h-full max-w-7xl mx-auto">
+        <div class="grid grid-cols-12 h-full">
+            
+            <!-- Sidebar -->
+            <aside class="col-span-3 border-l border-gray-700 p-4 flex flex-col h-full">
+                <div id="user-profile-sidebar" class="flex-grow">
+                    <div class="sidebar-link text-lg font-bold" id="home-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span>الرئيسية</span>
+                    </div>
+                    <div class="sidebar-link text-lg font-bold" id="profile-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span>الملف الشخصي</span>
+                    </div>
+                </div>
+                <div id="user-info-sidebar" class="flex items-center gap-3 p-3 hover:bg-gray-800 rounded-full cursor-pointer">
+                    <!-- User info populated by JS -->
+                </div>
+                <button id="logout-button" class="w-full mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-full transition-colors">تسجيل الخروج</button>
+            </aside>
+
+            <!-- Main Content -->
+            <main id="main-content" class="col-span-9 md:col-span-6 border-x border-gray-700 overflow-y-scroll no-scrollbar h-full">
+                <!-- Header -->
+                <div id="page-header" class="sticky top-0 bg-gray-900/80 backdrop-blur-sm z-10 p-4 border-b border-gray-700">
+                    <h2 id="page-title" class="text-xl font-bold">الرئيسية</h2>
+                </div>
+                
+                <!-- Home View -->
+                <div id="home-view">
+                    <!-- Create Post -->
+                    <div class="p-4 border-b border-gray-700">
+                        <textarea id="post-text" class="w-full bg-transparent text-lg p-2 focus:outline-none" rows="3" placeholder="ماذا يحدث؟"></textarea>
+                        <div id="media-preview-container" class="my-2"></div>
+                        <div class="flex justify-between items-center mt-2">
+                            <div>
+                                <input type="file" id="media-input" class="hidden" accept="image/*,video/*">
+                                <button id="attach-media-button" class="text-blue-500 hover:bg-blue-500/10 rounded-full p-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                </button>
+                            </div>
+                            <button id="submit-post-button" class="btn-primary" disabled>
+                                <span id="post-btn-text">نشر</span>
+                                <div id="post-loader" class="hidden loader w-5 h-5 border-2"></div>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Feed -->
+                    <div id="feed-container">
+                        <!-- Posts will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Profile View -->
+                <div id="profile-view" class="hidden">
+                    <div id="profile-header" class="p-4 border-b border-gray-700">
+                        <!-- Profile header populated by JS -->
+                    </div>
+                    <div id="user-posts-container">
+                        <!-- User's posts will be loaded here -->
+                    </div>
+                </div>
+            </main>
+            
+            <!-- Widgets -->
+            <aside class="hidden md:block col-span-3 p-4">
+                <div class="bg-gray-800 rounded-xl p-4">
+                    <h3 class="font-bold text-lg mb-4">قد يهمك</h3>
+                    <div class="text-gray-400 text-sm">
+                        <p>مرحباً بك في منصتنا الجديدة!</p>
+                        <p class="mt-2">شارك أفكارك وتواصل مع الآخرين.</p>
+                    </div>
+                </div>
+            </aside>
+
+        </div>
+    </div>
+    
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "", // Add your Firebase config
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
         // --- DOM Elements ---
         const loginSection = document.getElementById('login-section');
         const appSection = document.getElementById('app-section');
-        const userInfo = document.getElementById('user-info');
+        const userInfoSidebar = document.getElementById('user-info-sidebar');
         const logoutButton = document.getElementById('logout-button');
-        const promptInput = document.getElementById('prompt');
-        const generateButton = document.getElementById('generate-button');
-        const generateBtnText = document.getElementById('generate-btn-text');
-        const generateLoader = document.getElementById('generate-loader');
-        const articleTitleInput = document.getElementById('article-title');
-        const articleContentInput = document.getElementById('article-content');
-        const bloggerAuthSection = document.getElementById('blogger-auth-section');
-        const authorizeBloggerButton = document.getElementById('authorize-blogger-button');
-        const bloggerPublishSection = document.getElementById('blogger-publish-section');
-        const blogSelect = document.getElementById('blog-select');
-        const publishButton = document.getElementById('publish-button');
-        const publishBtnText = document.getElementById('publish-btn-text');
-        const publishLoader = document.getElementById('publish-loader');
-        const messageBox = document.getElementById('message-box');
+        const postText = document.getElementById('post-text');
+        const submitPostButton = document.getElementById('submit-post-button');
+        const postBtnText = document.getElementById('post-btn-text');
+        const postLoader = document.getElementById('post-loader');
+        const feedContainer = document.getElementById('feed-container');
+        const attachMediaButton = document.getElementById('attach-media-button');
+        const mediaInput = document.getElementById('media-input');
+        const mediaPreviewContainer = document.getElementById('media-preview-container');
+        
+        const homeButton = document.getElementById('home-button');
+        const profileButton = document.getElementById('profile-button');
+        const homeView = document.getElementById('home-view');
+        const profileView = document.getElementById('profile-view');
+        const pageTitle = document.getElementById('page-title');
+        const profileHeader = document.getElementById('profile-header');
+        const userPostsContainer = document.getElementById('user-posts-container');
+
 
         // --- State ---
-        let tokenClient;
         let userProfile = null;
-        // Client ID for Google Sign-In (used in HTML)
-        const GOOGLE_SIGN_IN_CLIENT_ID = '969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com';
-        // Client ID specifically for Blogger API access
-        const GOOGLE_BLOGGER_CLIENT_ID = '329662306799-jphpgpts06t60pheok0arb8iss0g2pvv.apps.googleusercontent.com';
-        const BLOGGER_SCOPE = 'https://www.googleapis.com/auth/blogger';
+        let selectedFile = null;
 
         // --- Utility Functions ---
-        function showMessage(message, isError = false) {
-            messageBox.textContent = message;
-            messageBox.className = `mt-4 p-4 rounded-lg text-center font-semibold ${isError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`;
-            messageBox.classList.remove('hidden');
-            setTimeout(() => {
-                messageBox.classList.add('hidden');
-            }, 5000);
-        }
-
         function decodeJwtResponse(token) {
             let base64Url = token.split('.')[1];
             let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -187,187 +207,176 @@
             return JSON.parse(jsonPayload);
         }
 
-        // --- Google Sign-In ---
-        function handleSignIn(response) {
+        function formatTime(timestamp) {
+            if (!timestamp) return 'الآن';
+            const date = timestamp.toDate();
+            const diff = Math.round((new Date() - date) / 1000);
+            
+            if (diff < 60) return `${diff} ث`;
+            if (diff < 3600) return `${Math.floor(diff / 60)} د`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)} س`;
+            return date.toLocaleDateString('ar-EG');
+        }
+        
+        function renderPost(post) {
+            let mediaHTML = '';
+            if (post.mediaUrl) {
+                if (post.mediaType.startsWith('image/')) {
+                    mediaHTML = `<img src="${post.mediaUrl}" class="mt-3 rounded-lg w-full object-cover" alt="Post media">`;
+                } else if (post.mediaType.startsWith('video/')) {
+                    mediaHTML = `<video src="${post.mediaUrl}" class="mt-3 rounded-lg w-full" controls></video>`;
+                }
+            }
+
+            return `
+                <div class="flex gap-3 p-4 border-b border-gray-700">
+                    <img src="${post.authorPicture}" alt="avatar" class="w-12 h-12 rounded-full">
+                    <div class="w-full">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold">${post.authorName}</span>
+                            <span class="text-gray-500 text-sm">· ${formatTime(post.createdAt)}</span>
+                        </div>
+                        <p class="mt-1 whitespace-pre-wrap">${post.text}</p>
+                        ${mediaHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- App Logic ---
+        window.handleSignIn = function(response) {
             userProfile = decodeJwtResponse(response.credential);
             loginSection.classList.add('hidden');
             appSection.classList.remove('hidden');
-            userInfo.innerHTML = `
-                <img src="${userProfile.picture}" alt="Profile Picture" class="w-12 h-12 rounded-full border-2 border-blue-400">
-                <div>
+            
+            userInfoSidebar.innerHTML = `
+                <img src="${userProfile.picture}" alt="Profile Picture" class="w-12 h-12 rounded-full">
+                <div class="flex-grow">
                     <p class="font-bold">${userProfile.name}</p>
-                    <p class="text-sm text-gray-400">${userProfile.email}</p>
+                    <p class="text-sm text-gray-400 truncate">${userProfile.email}</p>
                 </div>
             `;
-            // Initialize Google API client for Blogger
-            gapi.load('client', initializeGapiClient);
+            
+            loadAllPosts();
         }
 
         logoutButton.addEventListener('click', () => {
             userProfile = null;
             google.accounts.id.disableAutoSelect();
-            google.accounts.id.revoke(userProfile.email, done => {
-                console.log('consent revoked');
-            });
             appSection.classList.add('hidden');
             loginSection.classList.remove('hidden');
-            // Reset UI
-            bloggerAuthSection.classList.remove('hidden');
-            bloggerPublishSection.classList.add('hidden');
-            articleTitleInput.value = '';
-            articleContentInput.value = '';
-            promptInput.value = '';
+        });
+        
+        // --- Navigation ---
+        function showView(viewId) {
+            homeView.classList.add('hidden');
+            profileView.classList.add('hidden');
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        homeButton.addEventListener('click', () => {
+            pageTitle.textContent = 'الرئيسية';
+            showView('home-view');
+            loadAllPosts();
         });
 
-        // --- Gemini API ---
-        generateButton.addEventListener('click', async () => {
-            const prompt = promptInput.value.trim();
-            if (!prompt) {
-                showMessage('الرجاء إدخال فكرة المقال أولاً.', true);
-                return;
-            }
+        profileButton.addEventListener('click', () => {
+            pageTitle.textContent = userProfile.name;
+            showView('profile-view');
+            renderProfileHeader();
+            loadUserPosts();
+        });
 
-            generateBtnText.classList.add('hidden');
-            generateLoader.classList.remove('hidden');
-            generateButton.disabled = true;
+        function renderProfileHeader() {
+            profileHeader.innerHTML = `
+                <img src="${userProfile.picture}" class="w-24 h-24 rounded-full mx-auto border-4 border-blue-500">
+                <h3 class="text-2xl font-bold text-center mt-4">${userProfile.name}</h3>
+                <p class="text-gray-500 text-center">${userProfile.email}</p>
+            `;
+        }
+
+        // --- Post Creation ---
+        postText.addEventListener('input', () => {
+            submitPostButton.disabled = postText.value.trim().length === 0 && !selectedFile;
+        });
+
+        attachMediaButton.addEventListener('click', () => mediaInput.click());
+
+        mediaInput.addEventListener('change', (e) => {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                mediaPreviewContainer.innerHTML = `<p class="text-sm text-gray-400">تم اختيار: ${selectedFile.name}</p>`;
+                submitPostButton.disabled = false;
+            }
+        });
+
+        submitPostButton.addEventListener('click', async () => {
+            if (!userProfile) return;
+
+            postBtnText.classList.add('hidden');
+            postLoader.classList.remove('hidden');
+            submitPostButton.disabled = true;
 
             try {
-                const fullPrompt = `اكتب مقالاً مفصلاً باللغة العربية حول الموضوع التالي: "${prompt}". 
-                يجب أن يحتوي المقال على عنوان جذاب ومقدمة وفقرات منظمة وخاتمة. 
-                اجعل العنوان في السطر الأول مسبوقًا بكلمة "العنوان:".
-                المقال يجب أن يكون بصيغة HTML بسيطة (استخدم <p> للفقرات و <h2> للعناوين الفرعية إذا لزم الأمر).`;
-                
-                const apiKey = ""; // The platform will inject the key
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ role: "user", parts: [{ text: fullPrompt }] }]
-                    })
+                let mediaUrl = null;
+                let mediaType = null;
+
+                if (selectedFile) {
+                    const storageRef = ref(storage, `posts/${userProfile.sub}/${Date.now()}_${selectedFile.name}`);
+                    const snapshot = await uploadBytes(storageRef, selectedFile);
+                    mediaUrl = await getDownloadURL(snapshot.ref);
+                    mediaType = selectedFile.type;
+                }
+
+                await addDoc(collection(db, "posts"), {
+                    text: postText.value,
+                    authorId: userProfile.sub,
+                    authorName: userProfile.name,
+                    authorPicture: userProfile.picture,
+                    createdAt: serverTimestamp(),
+                    mediaUrl: mediaUrl,
+                    mediaType: mediaType,
                 });
 
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.statusText}`);
-                }
+                // Reset form
+                postText.value = '';
+                mediaInput.value = '';
+                selectedFile = null;
+                mediaPreviewContainer.innerHTML = '';
 
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    const titleMatch = text.match(/العنوان:(.*)/);
-                    let title = "مقال بدون عنوان";
-                    let content = text;
-
-                    if (titleMatch && titleMatch[1]) {
-                        title = titleMatch[1].trim();
-                        content = text.replace(/العنوان:.*\n/, '').trim();
-                    }
-                    
-                    articleTitleInput.value = title;
-                    articleContentInput.value = content;
-                    showMessage('تم إنشاء المقال بنجاح!', false);
-                } else {
-                    throw new Error('لم يتمكن Gemini من إنشاء محتوى. حاول مرة أخرى.');
-                }
             } catch (error) {
-                console.error('Error calling Gemini API:', error);
-                showMessage(`حدث خطأ أثناء إنشاء المقال: ${error.message}`, true);
+                console.error("Error adding document: ", error);
+                alert("حدث خطأ أثناء النشر!");
             } finally {
-                generateBtnText.classList.remove('hidden');
-                generateLoader.classList.add('hidden');
-                generateButton.disabled = false;
+                postBtnText.classList.remove('hidden');
+                postLoader.classList.add('hidden');
+                submitPostButton.disabled = true;
             }
         });
-
-        // --- Blogger API ---
-        async function initializeGapiClient() {
-            // Initialize the gapi client
-            await gapi.client.init({
-                // No client ID needed here for initialization, token will be provided with each request
-                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/blogger/v3/rest'],
-            });
-            // Initialize the token client with the Blogger-specific Client ID
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: GOOGLE_BLOGGER_CLIENT_ID,
-                scope: BLOGGER_SCOPE,
-                callback: '', // defined later
-            });
-        }
-
-        authorizeBloggerButton.addEventListener('click', () => {
-            tokenClient.callback = async (resp) => {
-                if (resp.error !== undefined) {
-                    throw (resp);
-                }
-                showMessage('تم السماح بالوصول بنجاح!', false);
-                bloggerAuthSection.classList.add('hidden');
-                bloggerPublishSection.classList.remove('hidden');
-                await listBlogs();
-            };
-            // Ask for consent for the Blogger scope
-            tokenClient.requestAccessToken({ prompt: 'consent' });
-        });
-
-        async function listBlogs() {
-            try {
-                const response = await gapi.client.blogger.blogs.listByUser({ 'userId': 'self' });
-                const blogs = response.result.items;
-                blogSelect.innerHTML = '';
-                if (blogs && blogs.length > 0) {
-                    blogs.forEach(blog => {
-                        const option = document.createElement('option');
-                        option.value = blog.id;
-                        option.textContent = blog.name;
-                        blogSelect.appendChild(option);
-                    });
-                } else {
-                    blogSelect.innerHTML = '<option>لم يتم العثور على مدونات.</option>';
-                }
-            } catch (err) {
-                console.error("Error listing blogs: ", err);
-                showMessage('فشل في تحميل قائمة المدونات.', true);
-            }
-        }
-
-        publishButton.addEventListener('click', async () => {
-            const blogId = blogSelect.value;
-            const title = articleTitleInput.value.trim();
-            const content = articleContentInput.value.trim();
-
-            if (!blogId || !title || !content) {
-                showMessage('الرجاء التأكد من اختيار مدونة وملء العنوان والمحتوى.', true);
-                return;
-            }
-
-            publishBtnText.classList.add('hidden');
-            publishLoader.classList.remove('hidden');
-            publishButton.disabled = true;
-
-            try {
-                const response = await gapi.client.blogger.posts.insert({
-                    'blogId': blogId,
-                    'resource': {
-                        'title': title,
-                        'content': content
-                    }
+        
+        // --- Data Loading ---
+        function loadAllPosts() {
+            const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+            onSnapshot(q, (querySnapshot) => {
+                let postsHTML = '';
+                querySnapshot.forEach((doc) => {
+                    postsHTML += renderPost(doc.data());
                 });
-                console.log('Post published:', response.result);
-                showMessage(`تم نشر المقال بنجاح في مدونتك!`, false);
-                articleTitleInput.value = '';
-                articleContentInput.value = '';
-                promptInput.value = '';
-
-            } catch (err) {
-                console.error("Error publishing post: ", err);
-                showMessage(`فشل نشر المقال: ${err.result.error.message}`, true);
-            } finally {
-                publishBtnText.classList.remove('hidden');
-                publishLoader.classList.add('hidden');
-                publishButton.disabled = false;
-            }
-        });
+                feedContainer.innerHTML = postsHTML || '<p class="text-center text-gray-500 p-8">لا توجد منشورات بعد. كن أول من ينشر!</p>';
+            });
+        }
+        
+        function loadUserPosts() {
+            if (!userProfile) return;
+            const q = query(collection(db, "posts"), where("authorId", "==", userProfile.sub), orderBy("createdAt", "desc"));
+            onSnapshot(q, (querySnapshot) => {
+                let postsHTML = '';
+                querySnapshot.forEach((doc) => {
+                    postsHTML += renderPost(doc.data());
+                });
+                userPostsContainer.innerHTML = postsHTML || '<p class="text-center text-gray-500 p-8">لم تقم بنشر أي شيء بعد.</p>';
+            });
+        }
 
     </script>
 </body>
