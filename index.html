@@ -3,426 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أداة النشر التلقائي على Blogger مع Gemini Pro</title>
+    <title>أداة النشر التلقائي في بلوجر مع Gemini</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
         body {
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Cairo', sans-serif;
         }
         .gradient-bg {
-            background: linear-gradient(135deg, #6B46C1 0%, #4299E1 100%);
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-primary {
+            @apply w-full text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center;
+            background: linear-gradient(to right, #3b82f6, #6366f1);
+            box-shadow: 0 4px 15px 0 rgba(59, 130, 246, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
         }
         .loader {
-            border-top-color: #6B46C1;
-            animation: spinner 1.5s linear infinite;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
         }
-        @keyframes spinner {
+        @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .article-content img {
-            max-width: 100%;
-            height: auto;
-            margin: 1rem auto;
-            border-radius: 0.5rem;
-        }
-        .article-content ul, .article-content ol {
-            padding-right: 1.5rem;
-            margin: 1rem 0;
-        }
-        .article-content h2 {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin: 1.5rem 0 1rem;
-            color: #2d3748;
-        }
-        .article-content p {
-            margin-bottom: 1rem;
-            line-height: 1.7;
-        }
-        .char-counter {
-            position: absolute;
-            left: 10px;
-            bottom: 10px;
-            font-size: 0.75rem;
-            color: #6b7280;
-        }
-        .input-container {
-            position: relative;
-        }
-        .success-message {
-            animation: fadeOut 3s forwards;
-        }
-        @keyframes fadeOut {
-            0% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { opacity: 0; display: none; }
-        }
     </style>
 </head>
-<body class="bg-gray-50">
-    <div class="min-h-screen flex flex-col">
-        <!-- Header -->
-        <header class="gradient-bg text-white shadow-lg">
-            <div class="container mx-auto px-4 py-6">
-                <div class="flex justify-between items-center">
-                    <h1 class="text-2xl font-bold">AutoBlog Genius Pro</h1>
-                    <div id="auth-section" class="flex items-center gap-4">
-                        <div id="login-success" class="hidden bg-green-500 text-white px-3 py-1 rounded-full text-sm success-message">
-                            تم التسجيل بنجاح!
-                        </div>
-                        <div id="g_id_onload"
-                            data-client_id="969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com"
-                            data-context="signin"
-                            data-ux_mode="popup"
-                            data-callback="handleGoogleSignIn"
-                            data-auto_prompt="false">
-                        </div>
-                        <div id="user-info" class="hidden items-center gap-3">
-                            <img id="user-avatar" class="w-10 h-10 rounded-full" src="" alt="User Avatar">
-                            <span id="user-name" class="font-medium"></span>
-                            <button id="logout-btn" class="text-white hover:text-gray-200">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                            </button>
-                        </div>
+<body class="bg-gray-900 text-white">
+
+    <div id="main-container" class="min-h-screen flex flex-col items-center justify-center p-4">
+
+        <!-- Login Section -->
+        <div id="login-section" class="w-full max-w-md text-center">
+            <div class="glass-card p-8 rounded-2xl shadow-lg">
+                <h1 class="text-3xl font-bold mb-2">أداة النشر الذكي</h1>
+                <p class="text-gray-300 mb-6">أنشئ وانشر مقالاتك في Blogger بلمسة زر</p>
+                <div id="g_id_onload"
+                     data-client_id="969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com"
+                     data-callback="handleSignIn"
+                     data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-shape="rectangular"
+                     data-theme="outline"
+                     data-text="signin_with"
+                     data-size="large"
+                     data-logo_alignment="left">
+                </div>
+                <p class="text-xs text-gray-500 mt-4">ملاحظة: تسجيل الدخول مطلوب للوصول إلى حسابك في Blogger.</p>
+            </div>
+        </div>
+
+        <!-- App Section -->
+        <div id="app-section" class="hidden w-full max-w-4xl">
+            <div class="flex justify-between items-center mb-6">
+                <div id="user-info" class="flex items-center gap-3">
+                    <!-- User info will be populated by JS -->
+                </div>
+                <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">تسجيل الخروج</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Generation Card -->
+                <div class="glass-card p-6 rounded-2xl">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                        1. إنشاء المقال
+                    </h2>
+                    <div class="space-y-4">
+                        <label for="prompt" class="block font-semibold text-gray-300">اكتب فكرة المقال أو موضوعه:</label>
+                        <textarea id="prompt" rows="4" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="مثال: أفضل 5 وجهات سياحية في المغرب لفصل الصيف"></textarea>
+                        <button id="generate-button" class="btn-primary">
+                            <span id="generate-btn-text">أنشئ المقال بواسطة Gemini</span>
+                            <div id="generate-loader" class="hidden loader w-6 h-6 border-2"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Publishing Card -->
+                <div class="glass-card p-6 rounded-2xl">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8 8 8 0 0 1-8-8z"/><path d="M10 9.5a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0z"/><path d="M14 15.5a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0z"/></svg>
+                        2. النشر في Blogger
+                    </h2>
+                    <div id="blogger-auth-section" class="space-y-4">
+                        <p class="text-gray-400">يجب السماح للتطبيق بالوصول إلى حسابك في Blogger.</p>
+                        <button id="authorize-blogger-button" class="btn-primary bg-orange-500" style="background: linear-gradient(to right, #f97316, #ea580c);">السماح بالوصول إلى Blogger</button>
+                    </div>
+                    <div id="blogger-publish-section" class="hidden space-y-4">
+                         <label for="blog-select" class="block font-semibold text-gray-300">اختر مدونتك:</label>
+                         <select id="blog-select" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option>الرجاء الانتظار، جاري تحميل المدونات...</option>
+                         </select>
+                         <button id="publish-button" class="btn-primary">
+                            <span id="publish-btn-text">نشر المقال الآن</span>
+                            <div id="publish-loader" class="hidden loader w-6 h-6 border-2"></div>
+                        </button>
                     </div>
                 </div>
             </div>
-        </header>
 
-        <!-- Main Content -->
-        <main class="flex-grow container mx-auto px-4 py-8">
-            <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-                <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center">
-                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mx-auto mb-4"></div>
-                    <h3 class="text-lg font-medium text-gray-900" id="loading-message">جاري التحميل...</h3>
-                    <div id="progress-bar" class="w-full bg-gray-200 rounded-full h-2.5 mt-4 hidden">
-                        <div id="progress-fill" class="bg-purple-600 h-2.5 rounded-full" style="width: 0%"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Blog Selection -->
-                <div class="lg:col-span-1 bg-white rounded-xl shadow-md p-6">
-                    <h2 class="text-xl font-bold mb-4 text-gray-800">إعدادات المدونة</h2>
+            <!-- Editor Card -->
+            <div class="glass-card p-6 rounded-2xl mt-6">
+                <h2 class="text-2xl font-bold mb-4">3. تحرير المحتوى</h2>
+                <div class="space-y-4">
+                    <label for="article-title" class="block font-semibold text-gray-300">عنوان المقال:</label>
+                    <input type="text" id="article-title" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="سيتم إنشاء العنوان هنا...">
                     
-                    <div id="blog-selection" class="mb-6">
-                        <label class="block text-gray-700 mb-2">اختر مدونتك:</label>
-                        <select id="blog-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" disabled>
-                            <option value="">الرجاء تسجيل الدخول أولاً</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">التصنيفات (علامات):</label>
-                        <div class="input-container">
-                            <input id="blog-tags" type="text" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="تسويق, تكنولوجيا, أدوات">
-                            <div id="tags-counter" class="char-counter">0/50</div>
-                        </div>
-                        <p class="text-sm text-gray-500 mt-1">افصل بين التصنيفات بفواصل</p>
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">تاريخ النشر:</label>
-                        <div class="flex items-center gap-4">
-                            <input id="publish-now" type="radio" name="publish-date" value="now" checked class="h-4 w-4 text-purple-600 focus:ring-purple-500">
-                            <label for="publish-now">نشر فوري</label>
-                            <input id="schedule-publish" type="radio" name="publish-date" value="schedule" class="h-4 w-4 text-purple-600 focus:ring-purple-500">
-                            <label for="schedule-publish">جدولة</label>
-                        </div>
-                        <input id="schedule-date" type="datetime-local" class="w-full mt-2 p-3 border border-gray-300 rounded-lg hidden">
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">إضافة صورة:</label>
-                        <div class="flex items-center gap-4 mb-2">
-                            <input id="auto-image" type="radio" name="image-option" value="auto" checked class="h-4 w-4 text-purple-600 focus:ring-purple-500">
-                            <label for="auto-image">توليد صورة تلقائياً</label>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <input id="custom-image" type="radio" name="image-option" value="custom" class="h-4 w-4 text-purple-600 focus:ring-purple-500">
-                            <label for="custom-image">رفع صورة مخصصة</label>
-                        </div>
-                        <input id="image-upload" type="file" accept="image/*" class="w-full mt-2 p-3 border border-gray-300 rounded-lg hidden">
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">نمط المقال:</label>
-                        <select id="article-style" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            <option value="professional">احترافي (مقالات تقنية)</option>
-                            <option value="casual">عام (مقالات مدونات)</option>
-                            <option value="listicle">قائمة (مقالات بأرقام أو نقاط)</option>
-                            <option value="news">خبري (أسلوب صحفي)</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">طول المقال:</label>
-                        <select id="article-length" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            <option value="short">قصير (300 كلمة)</option>
-                            <option value="medium" selected>متوسط (600 كلمة)</option>
-                            <option value="long">طويل (1000 كلمة)</option>
-                        </select>
-                    </div>
-
-                    <button id="generate-btn" class="w-full gradient-bg text-white py-3 px-6 rounded-lg font-medium hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                        توليد المقال
-                    </button>
-                </div>
-
-                <!-- Article Generator -->
-                <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
-                    <h2 class="text-xl font-bold mb-4 text-gray-800">منشئ المقالات الذكي</h2>
-                    
-                    <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">موضوع المقال:</label>
-                        <div class="input-container">
-                            <input id="article-topic" type="text" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="أفضل أدوات التسويق الرقمي لعام 2024">
-                            <div id="topic-counter" class="char-counter">0/100</div>
-                        </div>
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">التفاصيل الإضافية:</label>
-                        <div class="input-container">
-                            <textarea id="article-details" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="اكتب بعض النقاط التي تريد تضمينها في المقال..."></textarea>
-                            <div id="details-counter" class="char-counter">0/500</div>
-                        </div>
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">لغة المقال:</label>
-                        <select id="article-language" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            <option value="ar">العربية</option>
-                            <option value="en">الإنجليزية</option>
-                            <option value="fr">الفرنسية</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 mb-2">الكلمات المفتاحية (SEO):</label>
-                        <div class="input-container">
-                            <input id="seo-keywords" type="text" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="أدوات تسويق, تسويق رقمي, 2024">
-                            <div id="keywords-counter" class="char-counter">0/100</div>
-                        </div>
-                        <p class="text-sm text-gray-500 mt-1">افصل بين الكلمات المفتاحية بفواصل</p>
-                    </div>
-
-                    <div class="border-t border-gray-200 pt-6">
-                        <h3 class="text-lg font-bold mb-4 text-gray-800">المقال المولد:</h3>
-                        <div id="article-preview" class="hidden">
-                            <div id="generated-title" class="text-2xl font-bold mb-4 text-gray-800"></div>
-                            <div id="article-content" class="article-content prose max-w-none"></div>
-                            <div class="mt-6 flex gap-4">
-                                <button id="edit-btn" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">
-                                    تعديل المقال
-                                </button>
-                                <button id="publish-btn" class="gradient-bg text-white py-2 px-4 rounded-lg font-medium hover:opacity-90 transition">
-                                    نشر على المدونة
-                                </button>
-                                <button id="download-btn" class="bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition">
-                                    تحميل كملف HTML
-                                </button>
-                            </div>
-                        </div>
-                        <div id="empty-state" class="text-center py-12">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <h4 class="mt-4 text-lg font-medium text-gray-900">لا يوجد مقال مولد بعد</h4>
-                            <p class="mt-1 text-gray-500">اضغط على زر "توليد المقال" لإنشاء مقال جديد</p>
-                        </div>
-                    </div>
+                    <label for="article-content" class="block font-semibold text-gray-300">محتوى المقال:</label>
+                    <textarea id="article-content" rows="15" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="سيتم إنشاء محتوى المقال هنا... يمكنك تعديله قبل النشر."></textarea>
                 </div>
             </div>
-        </main>
+            
+            <!-- Message Area -->
+            <div id="message-box" class="hidden mt-4 p-4 rounded-lg text-center font-semibold"></div>
 
-        <!-- Footer -->
-        <footer class="bg-gray-800 text-white py-6">
-            <div class="container mx-auto px-4 text-center">
-                <p>أداة النشر التلقائي على Blogger مع Gemini Pro &copy; 2024</p>
-                <div class="mt-2 flex justify-center gap-4">
-                    <span id="word-count" class="text-sm text-gray-300">عدد الكلمات: 0</span>
-                    <span id="char-count" class="text-sm text-gray-300">عدد الأحرف: 0</span>
-                </div>
-            </div>
-        </footer>
+        </div>
     </div>
 
     <script>
-        // Configuration
-        const GEMINI_API_KEY = "AIzaSyCckxLP-wDTrFop_7EELhAGZmT7h4dw0wM";
-        const BLOGGER_API_KEY = "YOUR_BLOGGER_API_KEY"; // احصل عليه من Google Cloud Console
-        const CLIENT_ID = "969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com";
-        
-        // Global variables
-        let user = null;
-        let accessToken = null;
-        let blogs = [];
-        let generatedArticle = {
-            title: '',
-            content: '',
-            html: ''
-        };
+        // --- DOM Elements ---
+        const loginSection = document.getElementById('login-section');
+        const appSection = document.getElementById('app-section');
+        const userInfo = document.getElementById('user-info');
+        const logoutButton = document.getElementById('logout-button');
+        const promptInput = document.getElementById('prompt');
+        const generateButton = document.getElementById('generate-button');
+        const generateBtnText = document.getElementById('generate-btn-text');
+        const generateLoader = document.getElementById('generate-loader');
+        const articleTitleInput = document.getElementById('article-title');
+        const articleContentInput = document.getElementById('article-content');
+        const bloggerAuthSection = document.getElementById('blogger-auth-section');
+        const authorizeBloggerButton = document.getElementById('authorize-blogger-button');
+        const bloggerPublishSection = document.getElementById('blogger-publish-section');
+        const blogSelect = document.getElementById('blog-select');
+        const publishButton = document.getElementById('publish-button');
+        const publishBtnText = document.getElementById('publish-btn-text');
+        const publishLoader = document.getElementById('publish-loader');
+        const messageBox = document.getElementById('message-box');
 
-        // DOM Elements
-        const userInfoElement = document.getElementById('user-info');
-        const userNameElement = document.getElementById('user-name');
-        const userAvatarElement = document.getElementById('user-avatar');
-        const blogSelectElement = document.getElementById('blog-select');
-        const generateBtnElement = document.getElementById('generate-btn');
-        const articlePreviewElement = document.getElementById('article-preview');
-        const emptyStateElement = document.getElementById('empty-state');
-        const generatedTitleElement = document.getElementById('generated-title');
-        const articleContentElement = document.getElementById('article-content');
-        const publishBtnElement = document.getElementById('publish-btn');
-        const editBtnElement = document.getElementById('edit-btn');
-        const downloadBtnElement = document.getElementById('download-btn');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const loadingMessage = document.getElementById('loading-message');
-        const scheduleDateElement = document.getElementById('schedule-date');
-        const publishNowElement = document.getElementById('publish-now');
-        const schedulePublishElement = document.getElementById('schedule-publish');
-        const imageUploadElement = document.getElementById('image-upload');
-        const autoImageElement = document.getElementById('auto-image');
-        const customImageElement = document.getElementById('custom-image');
-        const loginSuccessElement = document.getElementById('login-success');
-        const progressBarElement = document.getElementById('progress-bar');
-        const progressFillElement = document.getElementById('progress-fill');
-        const wordCountElement = document.getElementById('word-count');
-        const charCountElement = document.getElementById('char-count');
+        // --- State ---
+        let gapiClient;
+        let tokenClient;
+        let userProfile = null;
+        const GOOGLE_CLIENT_ID = '969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com';
+        const BLOGGER_SCOPE = 'https://www.googleapis.com/auth/blogger';
 
-        // Initialize counters
-        const counters = {
-            'article-topic': { element: document.getElementById('topic-counter'), max: 100 },
-            'article-details': { element: document.getElementById('details-counter'), max: 500 },
-            'blog-tags': { element: document.getElementById('tags-counter'), max: 50 },
-            'seo-keywords': { element: document.getElementById('keywords-counter'), max: 100 }
-        };
+        // --- Utility Functions ---
+        function showMessage(message, isError = false) {
+            messageBox.textContent = message;
+            messageBox.className = `mt-4 p-4 rounded-lg text-center font-semibold ${isError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`;
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 5000);
+        }
 
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize event listeners
-            publishNowElement.addEventListener('change', toggleScheduleDate);
-            schedulePublishElement.addEventListener('change', toggleScheduleDate);
-            autoImageElement.addEventListener('change', toggleImageUpload);
-            customImageElement.addEventListener('change', toggleImageUpload);
-            generateBtnElement.addEventListener('click', generateArticle);
-            publishBtnElement.addEventListener('click', publishArticle);
-            editBtnElement.addEventListener('click', editArticle);
-            downloadBtnElement.addEventListener('click', downloadArticle);
-            
-            // Initialize counters
-            for (const [id, counter] of Object.entries(counters)) {
-                const inputElement = document.getElementById(id);
-                inputElement.addEventListener('input', () => updateCounter(id));
-                updateCounter(id); // Initialize counter values
-            }
-            
-            // Initialize article content listener for word count
-            articleContentElement.addEventListener('input', updateWordCount);
+        function decodeJwtResponse(token) {
+            let base64Url = token.split('.')[1];
+            let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        // --- Google Sign-In ---
+        function handleSignIn(response) {
+            userProfile = decodeJwtResponse(response.credential);
+            loginSection.classList.add('hidden');
+            appSection.classList.remove('hidden');
+            userInfo.innerHTML = `
+                <img src="${userProfile.picture}" alt="Profile Picture" class="w-12 h-12 rounded-full border-2 border-blue-400">
+                <div>
+                    <p class="font-bold">${userProfile.name}</p>
+                    <p class="text-sm text-gray-400">${userProfile.email}</p>
+                </div>
+            `;
+            // Initialize Google API client for Blogger
+            gapi.load('client', initializeGapiClient);
+        }
+
+        logoutButton.addEventListener('click', () => {
+            userProfile = null;
+            google.accounts.id.disableAutoSelect();
+            google.accounts.id.revoke(userProfile.email, done => {
+                console.log('consent revoked');
+            });
+            appSection.classList.add('hidden');
+            loginSection.classList.remove('hidden');
+            // Reset UI
+            bloggerAuthSection.classList.remove('hidden');
+            bloggerPublishSection.classList.add('hidden');
+            articleTitleInput.value = '';
+            articleContentInput.value = '';
+            promptInput.value = '';
         });
 
-        // Google Sign-In Handler
-        function handleGoogleSignIn(response) {
-            showLoading('جاري تسجيل الدخول...');
-            progressBarElement.classList.remove('hidden');
-            simulateProgress(30);
-            
-            // Verify the ID token with Google
-            fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + response.credential)
-                .then(res => res.json())
-                .then(data => {
-                    simulateProgress(60);
-                    user = {
-                        name: data.name,
-                        email: data.email,
-                        picture: data.picture
-                    };
-                    accessToken = google.accounts.oauth2.initTokenClient({
-                        client_id: CLIENT_ID,
-                        scope: 'https://www.googleapis.com/auth/blogger',
-                        callback: (tokenResponse) => {
-                            simulateProgress(90);
-                            accessToken = tokenResponse.access_token;
-                            updateUIAfterLogin();
-                            fetchUserBlogs();
-                            loginSuccessElement.classList.remove('hidden');
-                            setTimeout(() => {
-                                loginSuccessElement.classList.add('hidden');
-                            }, 3000);
-                        }
-                    }).requestAccessToken();
-                })
-                .catch(error => {
-                    console.error('Error verifying ID token:', error);
-                    hideLoading();
-                    alert('حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
+        // --- Gemini API ---
+        generateButton.addEventListener('click', async () => {
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                showMessage('الرجاء إدخال فكرة المقال أولاً.', true);
+                return;
+            }
+
+            generateBtnText.classList.add('hidden');
+            generateLoader.classList.remove('hidden');
+            generateButton.disabled = true;
+
+            try {
+                const fullPrompt = `اكتب مقالاً مفصلاً باللغة العربية حول الموضوع التالي: "${prompt}". 
+                يجب أن يحتوي المقال على عنوان جذاب ومقدمة وفقرات منظمة وخاتمة. 
+                اجعل العنوان في السطر الأول مسبوقًا بكلمة "العنوان:".
+                المقال يجب أن يكون بصيغة HTML بسيطة (استخدم <p> للفقرات و <h2> للعناوين الفرعية إذا لزم الأمر).`;
+                
+                const apiKey = ""; // The platform will inject the key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ role: "user", parts: [{ text: fullPrompt }] }]
+                    })
                 });
-        }
 
-        // Simulate progress for better UX
-        function simulateProgress(target) {
-            let current = 0;
-            const interval = setInterval(() => {
-                if (current >= target) {
-                    clearInterval(interval);
-                    return;
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText}`);
                 }
-                current += 5;
-                progressFillElement.style.width = `${current}%`;
-            }, 100);
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    const titleMatch = text.match(/العنوان:(.*)/);
+                    let title = "مقال بدون عنوان";
+                    let content = text;
+
+                    if (titleMatch && titleMatch[1]) {
+                        title = titleMatch[1].trim();
+                        content = text.replace(/العنوان:.*\n/, '').trim();
+                    }
+                    
+                    articleTitleInput.value = title;
+                    articleContentInput.value = content;
+                    showMessage('تم إنشاء المقال بنجاح!', false);
+                } else {
+                    throw new Error('لم يتمكن Gemini من إنشاء محتوى. حاول مرة أخرى.');
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                showMessage(`حدث خطأ أثناء إنشاء المقال: ${error.message}`, true);
+            } finally {
+                generateBtnText.classList.remove('hidden');
+                generateLoader.classList.add('hidden');
+                generateButton.disabled = false;
+            }
+        });
+
+        // --- Blogger API ---
+        async function initializeGapiClient() {
+            await gapi.client.init({
+                clientId: GOOGLE_CLIENT_ID,
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/blogger/v3/rest'],
+            });
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: BLOGGER_SCOPE,
+                callback: '', // defined later
+            });
         }
 
-        // Update counters
-        function updateCounter(id) {
-            const inputElement = document.getElementById(id);
-            const counter = counters[id];
-            const count = inputElement.value.length;
-            counter.element.textContent = `${count}/${counter.max}`;
-            
-            // Change color if approaching limit
-            if (count > counter.max * 0.9) {
-                counter.element.style.color = '#ef4444';
-            } else {
-                counter.element.style.color = '#6b7280';
+        authorizeBloggerButton.addEventListener('click', () => {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    throw (resp);
+                }
+                showMessage('تم السماح بالوصول بنجاح!', false);
+                bloggerAuthSection.classList.add('hidden');
+                bloggerPublishSection.classList.remove('hidden');
+                await listBlogs();
+            };
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        });
+
+        async function listBlogs() {
+            try {
+                const response = await gapi.client.blogger.blogs.listByUser({ 'userId': 'self' });
+                const blogs = response.result.items;
+                blogSelect.innerHTML = '';
+                if (blogs && blogs.length > 0) {
+                    blogs.forEach(blog => {
+                        const option = document.createElement('option');
+                        option.value = blog.id;
+                        option.textContent = blog.name;
+                        blogSelect.appendChild(option);
+                    });
+                } else {
+                    blogSelect.innerHTML = '<option>لم يتم العثور على مدونات.</option>';
+                }
+            } catch (err) {
+                console.error("Error listing blogs: ", err);
+                showMessage('فشل في تحميل قائمة المدونات.', true);
             }
         }
 
-        // Update word and character count
-        function updateWordCount() {
-            const text = articleContentElement.textContent;
-            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-            const charCount = text.length;
-            
-            wordCountElement.textContent = `عدد الكلمات: ${wordCount}`;
-            charCountElement.textContent = `عدد الأحرف: ${charCount}`;
-        }
+        publishButton.addEventListener('click', async () => {
+            const blogId = blogSelect.value;
+            const title = articleTitleInput.value.trim();
+            const content = articleContentInput.value.trim();
 
-        // Rest of your existing JavaScript functions...
-        // [Previous JavaScript code remains the same from the previous example]
-        // Make sure to include all the other functions like handleLogout, updateUIAfterLogin, 
-        // fetchUserBlogs, updateBlogSelect, toggleScheduleDate, toggleImageUpload, 
-        // generateArticle, processGeneratedArticle, publishArticle, editArticle, 
-        // saveArticleEdits, downloadArticle, showLoading, hideLoading, and helper functions
+            if (!blogId || !title || !content) {
+                showMessage('الرجاء التأكد من اختيار مدونة وملء العنوان والمحتوى.', true);
+                return;
+            }
 
-        // Initialize Google Sign-In
-        window.onload = function() {
-            google.accounts.id.initialize({
-                client_id: CLIENT_ID,
-                callback: handleGoogleSignIn
-            });
-            
-            // Add logout button event
-            document.getElementById('logout-btn').addEventListener('click', handleLogout);
-        };
+            publishBtnText.classList.add('hidden');
+            publishLoader.classList.remove('hidden');
+            publishButton.disabled = true;
 
-        // [Include all other existing functions from the previous example here]
+            try {
+                const response = await gapi.client.blogger.posts.insert({
+                    'blogId': blogId,
+                    'resource': {
+                        'title': title,
+                        'content': content
+                    }
+                });
+                console.log('Post published:', response.result);
+                showMessage(`تم نشر المقال بنجاح في مدونتك!`, false);
+                articleTitleInput.value = '';
+                articleContentInput.value = '';
+                promptInput.value = '';
+
+            } catch (err) {
+                console.error("Error publishing post: ", err);
+                showMessage(`فشل نشر المقال: ${err.result.error.message}`, true);
+            } finally {
+                publishBtnText.classList.remove('hidden');
+                publishLoader.classList.add('hidden');
+                publishButton.disabled = false;
+            }
+        });
+
     </script>
 </body>
 </html>
