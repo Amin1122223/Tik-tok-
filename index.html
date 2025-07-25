@@ -1,299 +1,99 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gofit - تطبيق لياقة بدنية</title>
-    
-    <!-- Google Client ID -->
-    <meta name="google-signin-client_id" content="969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com">
-
-    <!-- Tailwind CSS -->
+    <title>تسجيل الدخول عبر GitHub</title>
+    <!-- تضمين Tailwind CSS من CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-    
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-
     <style>
         body {
-            font-family: 'Cairo', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .screen {
-            display: none;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        .screen.active {
-            display: flex;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        /* Custom scrollbar for picker */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+            font-family: 'Inter', sans-serif; /* استخدام خط Inter */
+            direction: rtl; /* لضبط اتجاه النص للعربية */
+            text-align: right; /* محاذاة النص لليمين */
         }
     </style>
 </head>
-<body class="bg-black">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">تسجيل الدخول</h1>
 
-    <div id="app-container" class="max-w-sm mx-auto h-screen bg-black text-white overflow-hidden relative">
+        <!-- زر تسجيل الدخول عبر GitHub -->
+        <button id="github-login-btn"
+                class="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300 w-full flex items-center justify-center">
+            <svg class="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.499.09.679-.217.679-.481 0-.237-.008-.865-.013-1.702-2.782.602-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.46-1.11-1.46-.908-.619.069-.605.069-.605 1.002.07 1.527 1.028 1.527 1.028.89 1.524 2.333 1.084 2.902.829.091-.644.351-1.085.636-1.334-2.22-.253-4.555-1.113-4.555-4.931 0-1.09.39-1.984 1.029-2.682-.103-.253-.446-1.272.098-2.65 0 0 .84-.268 2.75 1.022A9.606 9.606 0 0112 6.865c.85.004 1.7.113 2.504.337 1.909-1.29 2.747-1.022 2.747-1.022.546 1.379.202 2.398.099 2.65.64.698 1.028 1.592 1.028 2.682 0 3.829-2.339 4.673-4.566 4.92.359.307.678.915.678 1.846 0 1.334-.012 2.41-.012 2.727 0 .268.18.581.687.475C21.133 20.203 24 16.436 24 12.017 24 6.484 19.522 2 14 2h-2z" clip-rule="evenodd" />
+            </svg>
+            تسجيل الدخول عبر GitHub
+        </button>
 
-        <!-- ============== Welcome Screen ============== -->
-        <div id="welcome-screen" class="screen active w-full h-full flex-col items-center justify-between p-8">
-            <div class="flex-shrink-0 flex flex-col items-center pt-16">
-                 <img src="https://assets-global.website-files.com/605826c62e8de87de744576b/6232363713a18433554a23a4_workout-app.png" alt="صورة توضيحية لتمارين رياضية" class="w-64 h-64 object-contain mb-8 rounded-full bg-gray-900 p-4">
-                <h1 class="text-4xl font-bold text-center mb-4">Gofit</h1>
-                <p class="text-gray-400 text-center text-lg">أفضل تطبيق للياقة البدنية للحفاظ على صحتك</p>
-            </div>
-            <div class="w-full pb-8">
-                <button onclick="showScreen('register-screen')" class="w-full py-4 rounded-full text-white font-bold text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 transition-all duration-300">ابدأ الآن</button>
-            </div>
-        </div>
-
-        <!-- ============== Register Screen ============== -->
-        <div id="register-screen" class="screen w-full h-full flex-col justify-center p-8">
-            <h2 class="text-3xl font-bold mb-2 text-center">أهلاً بك</h2>
-            <p class="text-gray-400 mb-8 text-center">أنشئ حسابك الجديد</p>
-
-            <input type="text" placeholder="الاسم الكامل" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4">
-            <input type="email" placeholder="البريد الإلكتروني" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4">
-            <div class="relative w-full mb-4">
-                <input id="reg-pass" type="password" placeholder="كلمة المرور" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 cursor-pointer" onclick="togglePassword('reg-pass', this)">
-                    <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                    <svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9 9 0 0 1 12 3c7 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/><path d="M15 12a3 3 0 1 1-3-3"/></svg>
-                </div>
-            </div>
-            
-            <div class="h-4"></div>
-            <button onclick="showScreen('gender-screen')" class="w-full py-4 rounded-full text-white font-bold text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 transition-all duration-300">إنشاء حساب</button>
-
-            <div class="flex items-center my-6">
-                <div class="flex-grow h-px bg-gray-700"></div><span class="mx-4 text-gray-500">أو</span><div class="flex-grow h-px bg-gray-700"></div>
-            </div>
-            
-            <div id="google-signin-button-register" class="flex justify-center"></div>
-
-            <p class="text-center mt-8 text-gray-400">
-                لديك حساب بالفعل؟ <button onclick="showScreen('login-screen')" class="font-bold text-purple-400 hover:underline">تسجيل الدخول</button>
-            </p>
-        </div>
-        
-        <!-- ============== Login Screen ============== -->
-        <div id="login-screen" class="screen w-full h-full flex-col justify-center p-8">
-             <button onclick="showScreen('welcome-screen')" class="absolute top-6 right-6 p-2 bg-gray-800 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="m9 18 6-6-6-6"/></svg>
-            </button>
-            <h2 class="text-3xl font-bold mb-2 text-center">مرحباً بعودتك</h2>
-            <p class="text-gray-400 mb-8 text-center">سجل الدخول للمتابعة</p>
-
-            <input type="email" placeholder="البريد الإلكتروني" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-4">
-            <div class="relative w-full mb-4">
-                <input id="login-pass" type="password" placeholder="كلمة المرور" class="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 cursor-pointer" onclick="togglePassword('login-pass', this)">
-                    <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                    <svg class="eye-closed hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9 9 0 0 1 12 3c7 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/><path d="M15 12a3 3 0 1 1-3-3"/></svg>
-                </div>
-            </div>
-            
-            <a href="#" class="text-left text-gray-400 hover:underline mb-8">نسيت كلمة المرور؟</a>
-
-            <button onclick="showScreen('success-screen')" class="w-full py-4 rounded-full text-white font-bold text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 transition-all duration-300">تسجيل الدخول</button>
-
-             <div class="flex items-center my-6">
-                <div class="flex-grow h-px bg-gray-700"></div><span class="mx-4 text-gray-500">أو</span><div class="flex-grow h-px bg-gray-700"></div>
-            </div>
-            
-            <div id="google-signin-button-login" class="flex justify-center"></div>
-        </div>
-
-        <!-- ============== Gender Screen ============== -->
-        <div id="gender-screen" class="screen w-full h-full flex-col p-8">
-            <div class="w-full p-4 flex items-center">
-                <button onclick="showScreen('register-screen')" class="p-2 bg-gray-800 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="m9 18 6-6-6-6"/></svg></button>
-                <div class="flex-grow h-2 bg-gray-800 rounded-full mx-4"><div class="h-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full" style="width: 20%;"></div></div>
-            </div>
-            <div class="flex-grow flex flex-col items-center justify-center">
-                <h2 class="text-2xl font-bold mb-8 text-center">أخبرنا عن نفسك!</h2>
-                <div class="flex gap-6 mb-16">
-                    <div id="gender-male" onclick="selectGender('male')" class="gender-option flex flex-col items-center gap-4 p-8 rounded-2xl cursor-pointer transition-all bg-purple-900 border-2 border-purple-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M12 11v10"/><path d="m15 8-3-3-3 3"/></svg>
-                        <span class="font-semibold text-lg">ذكر</span>
-                    </div>
-                    <div id="gender-female" onclick="selectGender('female')" class="gender-option flex flex-col items-center gap-4 p-8 rounded-2xl cursor-pointer transition-all bg-gray-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M15 12H9"/><path d="M12 9v6"/><path d="m15 15-6-6"/></svg>
-                        <span class="font-semibold text-lg">أنثى</span>
-                    </div>
-                </div>
-                <button onclick="showScreen('age-screen')" class="w-full py-4 rounded-full text-white font-bold text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 transition-all duration-300">متابعة</button>
-            </div>
-        </div>
-
-        <!-- ============== Data Picker Screens (Age, Weight, Height) ============== -->
-        <div id="age-screen" class="screen w-full h-full flex-col p-8 data-picker-screen" data-title="كم عمرك؟" data-unit="سنة" data-min="15" data-max="80" data-step="1" data-value="25" data-next="weight-screen" data-prev="gender-screen" data-progress="40"></div>
-        <div id="weight-screen" class="screen w-full h-full flex-col p-8 data-picker-screen" data-title="ما هو وزنك؟" data-unit="كجم" data-min="40" data-max="150" data-step="1" data-value="70" data-next="height-screen" data-prev="age-screen" data-progress="60"></div>
-        <div id="height-screen" class="screen w-full h-full flex-col p-8 data-picker-screen" data-title="ما هو طولك؟" data-unit="سم" data-min="140" data-max="220" data-step="1" data-value="175" data-next="success-screen" data-prev="weight-screen" data-progress="80"></div>
-
-        <!-- ============== Success Screen ============== -->
-        <div id="success-screen" class="screen w-full h-full flex-col items-center justify-center p-8">
-            <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-500 mb-8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            <h2 class="text-3xl font-bold mb-4 text-center">أهلاً بك في Gofit</h2>
-            <p class="text-gray-400 text-lg text-center mb-12">لقد أكملت إعداد ملفك الشخصي بنجاح.</p>
-            <button onclick="alert('تم الانتقال إلى الصفحة الرئيسية!')" class="w-full py-4 rounded-full text-white font-bold text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 transition-all duration-300">الذهاب إلى الصفحة الرئيسية</button>
-        </div>
-
+        <p id="message" class="mt-6 text-gray-600 text-sm"></p>
     </div>
 
     <script>
-        // --- State Management ---
-        const userData = {
-            gender: 'male',
-            age: 25,
-            weight: 70,
-            height: 175,
-        };
+        document.addEventListener('DOMContentLoaded', () => {
+            const githubLoginBtn = document.getElementById('github-login-btn');
+            const messageDisplay = document.getElementById('message');
 
-        // --- Navigation ---
-        let currentScreen = 'welcome-screen';
-        function showScreen(screenId) {
-            document.getElementById(currentScreen).classList.remove('active');
-            document.getElementById(screenId).classList.add('active');
-            currentScreen = screenId;
-        }
+            // معرف العميل (Client ID) الذي قدمته
+            const CLIENT_ID = 'Ov23liZEjqKlk8PeK3Fp';
+            // عنوان URL لإعادة التوجيه بعد التفويض (يجب أن يكون مسجلاً في إعدادات تطبيق GitHub الخاص بك)
+            // في هذا المثال، نفترض أنه سيعيد التوجيه إلى نفس الصفحة أو صفحة أخرى على خادمك الخلفي.
+            // لأغراض العرض التوضيحي، سنستخدم موقعًا وهميًا.
+            // **هام:** يجب أن يكون هذا مطابقًا لـ "Authorization callback URL" في إعدادات تطبيق GitHub الخاص بك.
+            const REDIRECT_URI = 'http://localhost:3000/auth/github/callback'; // مثال: يجب استبدال هذا بعنوان URL الفعلي لخادمك الخلفي
 
-        // --- UI Interactions ---
-        function togglePassword(inputId, iconElement) {
-            const input = document.getElementById(inputId);
-            const eyeOpen = iconElement.querySelector('.eye-open');
-            const eyeClosed = iconElement.querySelector('.eye-closed');
-            if (input.type === "password") {
-                input.type = "text";
-                eyeOpen.classList.add('hidden');
-                eyeClosed.classList.remove('hidden');
-            } else {
-                input.type = "password";
-                eyeOpen.classList.remove('hidden');
-                eyeClosed.classList.add('hidden');
-            }
-        }
+            githubLoginBtn.addEventListener('click', () => {
+                // بناء عنوان URL لتفويض GitHub
+                const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=user:email`;
 
-        function selectGender(gender) {
-            userData.gender = gender;
-            document.querySelectorAll('.gender-option').forEach(el => {
-                el.classList.remove('bg-purple-900', 'border-purple-500');
-                el.classList.add('bg-gray-800');
+                // توجيه المستخدم إلى GitHub
+                window.location.href = githubAuthUrl;
+                messageDisplay.textContent = 'جارٍ توجيهك إلى GitHub لتسجيل الدخول...';
             });
-            const selectedEl = document.getElementById(`gender-${gender}`);
-            selectedEl.classList.add('bg-purple-900', 'border-purple-500');
-            selectedEl.classList.remove('bg-gray-800');
-        }
 
-        // --- Data Picker Logic ---
-        function createDataPicker(screenElement) {
-            const { title, unit, min, max, step, value, next, prev, progress } = screenElement.dataset;
-            const numbers = Array.from({ length: (parseInt(max) - parseInt(min)) / parseInt(step) + 1 }, (_, i) => parseInt(min) + i * parseInt(step));
-            const itemHeight = 64; // h-16
-            
-            let html = `
-                <div class="w-full p-4 flex items-center">
-                    <button onclick="showScreen('${prev}')" class="p-2 bg-gray-800 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="m9 18 6-6-6-6"/></svg></button>
-                    <div class="flex-grow h-2 bg-gray-800 rounded-full mx-4"><div class="h-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full" style="width: ${progress}%;"></div></div>
-                </div>
-                <div class="flex-grow flex flex-col items-center justify-center">
-                    <h2 class="text-2xl font-bold mb-8 text-center">${title}</h2>
-                    <div class="relative w-48 h-80">
-                        <div id="picker-${screenElement.id}" class="h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide">
-                            <div style="height: ${numbers.length * itemHeight + (2 * itemHeight)}px">
-                                <div class="h-32"></div>
-                                ${numbers.map(num => `<div class="h-16 flex items-center justify-center snap-center text-4xl font-bold transition-all duration-200 text-gray-600">${num}</div>`).join('')}
-                                <div class="h-32"></div>
-                            </div>
-                        </div>
-                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div class="w-full h-16 border-y-2 border-purple-500 rounded-lg flex items-center justify-end pr-4">
-                               <span class="text-purple-400 font-bold">${unit}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="h-16"></div>
-                    <button onclick="showScreen('${next}')" class="w-full py-4 rounded-full text-white font-bold text-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 transition-all duration-300">متابعة</button>
-                </div>
-            `;
-            screenElement.innerHTML = html;
+            // معالجة إعادة التوجيه بعد التفويض من GitHub
+            // هذا الجزء من الكود سيتم تنفيذه عندما يعيد GitHub توجيه المستخدم إلى تطبيقك
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code'); // الحصول على رمز التفويض من عنوان URL
 
-            const scrollContainer = document.getElementById(`picker-${screenElement.id}`);
-            const items = scrollContainer.querySelectorAll('.snap-center');
-
-            const updateSelection = () => {
-                const scrollTop = scrollContainer.scrollTop;
-                const centerIndex = Math.round(scrollTop / itemHeight);
-                
-                items.forEach((item, index) => {
-                    if(index === centerIndex) {
-                        item.classList.remove('text-gray-600', 'scale-100');
-                        item.classList.add('text-white', 'scale-110');
-                        const key = screenElement.id.split('-')[0]; // 'age', 'weight', 'height'
-                        userData[key] = parseInt(item.textContent);
+            if (code) {
+                messageDisplay.textContent = `تم الحصول على رمز التفويض من GitHub: ${code}. الآن يجب إرسال هذا الرمز إلى الخادم الخلفي لتبادله برمز الوصول.`;
+                // **الخطوة التالية (تتطلب خادمًا خلفيًا):**
+                // هنا، يجب عليك إرسال هذا "code" إلى نقطة نهاية (endpoint) على الخادم الخلفي الخاص بك.
+                // سيقوم الخادم الخلفي بعد ذلك باستخدام هذا "code" و "Client Secret"
+                // لطلب "Access Token" من GitHub.
+                // مثال (كود وهمي لطلب Fetch إلى الخادم الخلفي):
+                /*
+                fetch('/api/auth/github/callback', { // نقطة نهاية وهمية على خادمك الخلفي
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code: code })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        messageDisplay.textContent = 'تم تسجيل الدخول بنجاح! مرحبًا بك.';
+                        // يمكنك هنا تخزين رمز الوصول (Access Token) في Local Storage أو Session Storage
+                        // وتوجيه المستخدم إلى صفحة لوحة التحكم أو الصفحة الرئيسية.
                     } else {
-                        item.classList.add('text-gray-600', 'scale-100');
-                        item.classList.remove('text-white', 'scale-110');
+                        messageDisplay.textContent = `فشل تسجيل الدخول: ${data.error || 'خطأ غير معروف'}`;
                     }
+                })
+                .catch(error => {
+                    console.error('خطأ في طلب تسجيل الدخول:', error);
+                    messageDisplay.textContent = 'حدث خطأ أثناء محاولة تسجيل الدخول.';
                 });
-            };
-
-            scrollContainer.addEventListener('scroll', updateSelection);
-
-            // Set initial value
-            const initialIndex = numbers.indexOf(parseInt(value));
-            if (initialIndex !== -1) {
-                scrollContainer.scrollTop = initialIndex * itemHeight;
+                */
+            } else if (urlParams.get('error')) {
+                // معالجة الأخطاء إذا رفض المستخدم التفويض
+                const error = urlParams.get('error');
+                const errorDescription = urlParams.get('error_description') || 'لا يوجد وصف.';
+                messageDisplay.textContent = `فشل تسجيل الدخول عبر GitHub: ${error}. الوصف: ${errorDescription}`;
             }
-            // A small delay to ensure rendering is complete before initial update
-            setTimeout(updateSelection, 100);
-        }
-
-        // --- Google Sign-In ---
-        function handleCredentialResponse(response) {
-          console.log("Encoded JWT ID token: " + response.credential);
-          // هنا يمكنك إرسال التوكن إلى الخادم الخاص بك للتحقق منه وإنشاء جلسة للمستخدم
-          showScreen('success-screen');
-        }
-
-        window.onload = function () {
-          google.accounts.id.initialize({
-            client_id: "969437325749-71frkrdm6d4k60p36i8k4poonfil3rv8.apps.googleusercontent.com",
-            callback: handleCredentialResponse
-          });
-          
-          // Render Google button on register screen
-          google.accounts.id.renderButton(
-            document.getElementById("google-signin-button-register"),
-            { theme: "outline", size: "large", type: "standard", text: "signup_with", shape: "pill", width: "300" } 
-          );
-
-          // Render Google button on login screen
-           google.accounts.id.renderButton(
-            document.getElementById("google-signin-button-login"),
-            { theme: "outline", size: "large", type: "standard", text: "signin_with", shape: "pill", width: "300" } 
-          );
-
-          // google.accounts.id.prompt(); // Optional: Displays the One Tap prompt
-
-          // Initialize all data pickers
-          document.querySelectorAll('.data-picker-screen').forEach(createDataPicker);
-        };
+        });
     </script>
-
 </body>
 </html>
