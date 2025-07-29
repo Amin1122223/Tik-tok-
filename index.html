@@ -3,97 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول عبر GitHub</title>
-    <!-- تضمين Tailwind CSS من CDN -->
+    <title>أداة Blogger API</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        /* Custom styles for the Inter font and general body styling */
         body {
-            font-family: 'Inter', sans-serif; /* استخدام خط Inter */
-            direction: rtl; /* لضبط اتجاه النص للعربية */
-            text-align: right; /* محاذاة النص لليمين */
+            font-family: 'Inter', sans-serif;
+            direction: rtl; /* Set text direction to right-to-left for Arabic */
+            text-align: right; /* Align text to the right for Arabic */
+        }
+        /* Ensure text alignment for specific elements if needed */
+        .text-right {
+            text-align: right;
+        }
+        .text-left {
+            text-align: left; /* Override for specific left-aligned elements like URLs if necessary */
         }
     </style>
+    <!-- React and ReactDOM CDNs -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX transformation in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center">
-        <h1 class="text-3xl font-bold mb-6 text-gray-800">تسجيل الدخول</h1>
+<body class="bg-gradient-to-br from-blue-100 to-purple-100 min-h-screen flex items-center justify-center p-4">
 
-        <!-- زر تسجيل الدخول عبر GitHub -->
-        <button id="github-login-btn"
-                class="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300 w-full flex items-center justify-center">
-            <svg class="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.499.09.679-.217.679-.481 0-.237-.008-.865-.013-1.702-2.782.602-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.46-1.11-1.46-.908-.619.069-.605.069-.605 1.002.07 1.527 1.028 1.527 1.028.89 1.524 2.333 1.084 2.902.829.091-.644.351-1.085.636-1.334-2.22-.253-4.555-1.113-4.555-4.931 0-1.09.39-1.984 1.029-2.682-.103-.253-.446-1.272.098-2.65 0 0 .84-.268 2.75 1.022A9.606 9.606 0 0112 6.865c.85.004 1.7.113 2.504.337 1.909-1.29 2.747-1.022 2.747-1.022.546 1.379.202 2.398.099 2.65.64.698 1.028 1.592 1.028 2.682 0 3.829-2.339 4.673-4.566 4.92.359.307.678.915.678 1.846 0 1.334-.012 2.41-.012 2.727 0 .268.18.581.687.475C21.133 20.203 24 16.436 24 12.017 24 6.484 19.522 2 14 2h-2z" clip-rule="evenodd" />
-            </svg>
-            تسجيل الدخول عبر GitHub
-        </button>
-
-        <p id="message" class="mt-6 text-gray-600 text-sm"></p>
+    <div id="root" class="w-full max-w-3xl">
+        <!-- React app will be mounted here -->
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const githubLoginBtn = document.getElementById('github-login-btn');
-            const messageDisplay = document.getElementById('message');
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-            // معرف العميل (Client ID) الذي قدمته
-            const CLIENT_ID = 'Ov23liZEjqKlk8PeK3Fp';
-            // عنوان URL لإعادة التوجيه بعد التفويض (يجب أن يكون مسجلاً في إعدادات تطبيق GitHub الخاص بك)
-            // في هذا المثال، نفترض أنه سيعيد التوجيه إلى نفس الصفحة أو صفحة أخرى على خادمك الخلفي.
-            // لأغراض العرض التوضيحي، سنستخدم موقعًا وهميًا.
-            // **هام:** يجب أن يكون هذا مطابقًا لـ "Authorization callback URL" في إعدادات تطبيق GitHub الخاص بك.
-            const REDIRECT_URI = 'http://localhost:3000/auth/github/callback'; // مثال: يجب استبدال هذا بعنوان URL الفعلي لخادمك الخلفي
+        // Main App component
+        const App = () => {
+            // State variables for authentication and data
+            const [isSignedIn, setIsSignedIn] = useState(false);
+            const [userEmail, setUserEmail] = useState('');
+            const [blogs, setBlogs] = useState([]);
+            const [posts, setPosts] = useState([]);
+            const [selectedBlogId, setSelectedBlogId] = useState(null);
+            const [error, setError] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [isApiLoaded, setIsApiLoaded] = useState(false); // New state to track if gapi is fully loaded
 
-            githubLoginBtn.addEventListener('click', () => {
-                // بناء عنوان URL لتفويض GitHub
-                const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=user:email`;
+            // Google API client ID from the user's prompt
+            const CLIENT_ID = '329662306799-jphpgpts06t60pheok0arb8iss0g2pvv.apps.googleusercontent.com';
+            // Scopes required for Blogger API access
+            const SCOPES = 'https://www.googleapis.com/auth/blogger https://www.googleapis.com/auth/userinfo.email';
 
-                // توجيه المستخدم إلى GitHub
-                window.location.href = githubAuthUrl;
-                messageDisplay.textContent = 'جارٍ توجيهك إلى GitHub لتسجيل الدخول...';
-            });
+            // Effect to load Google API client library
+            useEffect(() => {
+                // Load the Google API client library
+                const script = document.createElement('script');
+                script.src = 'https://apis.google.com/js/api.js';
+                script.onload = () => {
+                    // Load the 'client' library first, then initialize
+                    gapi.load('client', () => {
+                        gapi.client.init({
+                            clientId: CLIENT_ID,
+                            scope: SCOPES,
+                            // Explicitly load discovery document for Blogger API
+                            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/blogger/v3/rest']
+                        }).then(() => {
+                            // After client is initialized, load 'auth2'
+                            gapi.load('auth2', () => {
+                                // Now auth2 is definitely ready
+                                gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+                                updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+                                setIsApiLoaded(true); // Set API loaded to true only after full initialization
+                            });
+                        }).catch(err => {
+                            setError(`خطأ في تهيئة عميل Google API: ${err.details || err.message}`);
+                            console.error('Error initializing Google API client:', err);
+                        });
+                    });
+                };
+                script.onerror = () => {
+                    setError('فشل تحميل مكتبة Google API. يرجى التحقق من اتصالك بالإنترنت.');
+                };
+                document.body.appendChild(script);
+            }, []);
 
-            // معالجة إعادة التوجيه بعد التفويض من GitHub
-            // هذا الجزء من الكود سيتم تنفيذه عندما يعيد GitHub توجيه المستخدم إلى تطبيقك
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code'); // الحصول على رمز التفويض من عنوان URL
+            // Update sign-in status and user information
+            const updateSigninStatus = (signedIn) => {
+                setIsSignedIn(signedIn);
+                if (signedIn) {
+                    const profile = gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile();
+                    setUserEmail(profile.getEmail());
+                    // If signed in, automatically load blogs
+                    listBlogs();
+                } else {
+                    setUserEmail('');
+                    setBlogs([]);
+                    setPosts([]);
+                    setSelectedBlogId(null);
+                }
+            };
 
-            if (code) {
-                messageDisplay.textContent = `تم الحصول على رمز التفويض من GitHub: ${code}. الآن يجب إرسال هذا الرمز إلى الخادم الخلفي لتبادله برمز الوصول.`;
-                // **الخطوة التالية (تتطلب خادمًا خلفيًا):**
-                // هنا، يجب عليك إرسال هذا "code" إلى نقطة نهاية (endpoint) على الخادم الخلفي الخاص بك.
-                // سيقوم الخادم الخلفي بعد ذلك باستخدام هذا "code" و "Client Secret"
-                // لطلب "Access Token" من GitHub.
-                // مثال (كود وهمي لطلب Fetch إلى الخادم الخلفي):
-                /*
-                fetch('/api/auth/github/callback', { // نقطة نهاية وهمية على خادمك الخلفي
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ code: code })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        messageDisplay.textContent = 'تم تسجيل الدخول بنجاح! مرحبًا بك.';
-                        // يمكنك هنا تخزين رمز الوصول (Access Token) في Local Storage أو Session Storage
-                        // وتوجيه المستخدم إلى صفحة لوحة التحكم أو الصفحة الرئيسية.
-                    } else {
-                        messageDisplay.textContent = `فشل تسجيل الدخول: ${data.error || 'خطأ غير معروف'}`;
-                    }
-                })
-                .catch(error => {
-                    console.error('خطأ في طلب تسجيل الدخول:', error);
-                    messageDisplay.textContent = 'حدث خطأ أثناء محاولة تسجيل الدخول.';
-                });
-                */
-            } else if (urlParams.get('error')) {
-                // معالجة الأخطاء إذا رفض المستخدم التفويض
-                const error = urlParams.get('error');
-                const errorDescription = urlParams.get('error_description') || 'لا يوجد وصف.';
-                messageDisplay.textContent = `فشل تسجيل الدخول عبر GitHub: ${error}. الوصف: ${errorDescription}`;
-            }
-        });
+            // Handle sign-in
+            const handleSignInClick = async () => {
+                if (!isApiLoaded) {
+                    setError('جاري تحميل Google API. يرجى الانتظار قليلاً.');
+                    return;
+                }
+                try {
+                    await gapi.auth2.getAuthInstance().signIn();
+                } catch (err) {
+                    setError(`خطأ في تسجيل الدخول: ${err.details || err.message}`);
+                    console.error('Error signing in:', err);
+                }
+            };
+
+            // Handle sign-out
+            const handleSignOutClick = async () => {
+                if (!isApiLoaded) return; // Prevent action if API not loaded
+                try {
+                    await gapi.auth2.getAuthInstance().signOut();
+                } catch (err) {
+                    setError(`خطأ في تسجيل الخروج: ${err.details || err.message}`);
+                    console.error('Error signing out:', err);
+                }
+            };
+
+            // List blogs for the authenticated user
+            const listBlogs = async () => {
+                if (!isApiLoaded) return; // Prevent action if API not loaded
+                setLoading(true);
+                setError(null);
+                try {
+                    // No need to gapi.client.load('blogger', 'v3') here if discoveryDocs is set in init
+                    // The API should be ready from the initial client setup
+                    const response = await gapi.client.blogger.blogs.listByUser({
+                        userId: 'self', // 'self' refers to the authenticated user
+                    });
+                    setBlogs(response.result.items || []);
+                } catch (err) {
+                    setError(`خطأ في جلب المدونات: ${err.result?.error?.message || err.message}`);
+                    console.error('Error listing blogs:', err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // List posts for a selected blog
+            const listPosts = async (blogId) => {
+                if (!isApiLoaded) return; // Prevent action if API not loaded
+                setLoading(true);
+                setError(null);
+                try {
+                    // No need to gapi.client.load('blogger', 'v3') here if discoveryDocs is set in init
+                    const response = await gapi.client.blogger.posts.list({
+                        blogId: blogId,
+                    });
+                    setPosts(response.result.items || []);
+                    setSelectedBlogId(blogId);
+                } catch (err) {
+                    setError(`خطأ في جلب المشاركات: ${err.result?.error?.message || err.message}`);
+                    console.error('Error listing posts:', err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 flex flex-col items-center justify-center p-4 font-sans">
+                    <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-3xl border border-gray-200">
+                        <h1 className="text-4xl font-extrabold text-center text-gray-800 mb-8">
+                            أداة Blogger API
+                        </h1>
+
+                        {/* Error Message Display */}
+                        {error && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6 text-right" role="alert">
+                                <strong className="font-bold">خطأ!</strong>
+                                <span className="block sm:inline mr-2">{error}</span>
+                            </div>
+                        )}
+
+                        {/* Authentication Section */}
+                        <div className="flex flex-col items-center justify-center mb-8 space-y-4">
+                            {isSignedIn ? (
+                                <>
+                                    <p className="text-lg text-gray-700 text-center">
+                                        مرحبًا بك، <span className="font-semibold text-blue-600">{userEmail}</span>!
+                                    </p>
+                                    <button
+                                        onClick={handleSignOutClick}
+                                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75"
+                                    >
+                                        تسجيل الخروج
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={handleSignInClick}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-75"
+                                    disabled={!isApiLoaded} /* Disable button until API is loaded */
+                                >
+                                    {isApiLoaded ? 'تسجيل الدخول باستخدام Google' : 'جاري تحميل API...'}
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Loading Indicator */}
+                        {loading && (
+                            <div className="flex justify-center items-center mb-6">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                                <p className="mr-3 text-blue-600 font-medium">جار التحميل...</p>
+                            </div>
+                        )}
+
+                        {/* Blogs Section */}
+                        {isSignedIn && (
+                            <div className="mb-8">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">مدوناتك</h2>
+                                {blogs.length > 0 ? (
+                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {blogs.map((blog) => (
+                                            <li
+                                                key={blog.id}
+                                                className={`bg-gray-50 p-4 rounded-lg shadow-sm border ${selectedBlogId === blog.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'} cursor-pointer hover:bg-gray-100 transition duration-200 ease-in-out text-right`}
+                                                onClick={() => listPosts(blog.id)}
+                                            >
+                                                <h3 className="text-xl font-semibold text-gray-700">{blog.name}</h3>
+                                                <p className="text-sm text-gray-500 truncate text-left" dir="ltr">{blog.url}</p>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    !loading && <p className="text-center text-gray-600">لا توجد مدونات متاحة.</p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Posts Section */}
+                        {isSignedIn && selectedBlogId && (
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">مشاركات المدونة</h2>
+                                {posts.length > 0 ? (
+                                    <ul className="space-y-4">
+                                        {posts.map((post) => (
+                                            <li key={post.id} className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200 text-right">
+                                                <h3 className="text-xl font-semibold text-gray-700 mb-1">{post.title}</h3>
+                                                <p className="text-sm text-gray-500">
+                                                    تاريخ النشر: {new Date(post.published).toLocaleDateString('ar-EG')}
+                                                </p>
+                                                <a
+                                                    href={post.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-500 hover:underline text-sm mt-2 inline-block text-left"
+                                                    dir="ltr"
+                                                >
+                                                    عرض المشاركة
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    !loading && <p className="text-center text-gray-600">لا توجد مشاركات لهذه المدونة.</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // Render the App component into the 'root' div
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
