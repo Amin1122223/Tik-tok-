@@ -1,281 +1,1303 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أداة Blogger API</title>
-    <!-- Tailwind CSS CDN -->
+    <title>أداة صناعة الأنمي والمانجا</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts - Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        /* Custom styles for the Inter font and general body styling */
-        body {
-            font-family: 'Inter', sans-serif;
-            direction: rtl; /* Set text direction to right-to-left for Arabic */
-            text-align: right; /* Align text to the right for Arabic */
-        }
-        /* Ensure text alignment for specific elements if needed */
-        .text-right {
-            text-align: right;
-        }
-        .text-left {
-            text-align: left; /* Override for specific left-aligned elements like URLs if necessary */
-        }
-    </style>
-    <!-- React and ReactDOM CDNs -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX transformation in the browser -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-</head>
-<body class="bg-gradient-to-br from-blue-100 to-purple-100 min-h-screen flex items-center justify-center p-4">
+    <script type="module">
+        // Import Firebase modules.
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <div id="root" class="w-full max-w-3xl">
-        <!-- React app will be mounted here -->
-    </div>
+        // Global variables for Firebase services.
+        window.app = null;
+        window.db = null;
+        window.auth = null;
+        window.userId = null;
+        window.currentAppId = null;
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Initialize Firebase with the provided config.
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                window.app = initializeApp(firebaseConfig);
+                window.db = getFirestore(window.app);
+                window.auth = getAuth(window.app);
+                window.currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // Main App component
-        const App = () => {
-            // State variables for authentication and data
-            const [isSignedIn, setIsSignedIn] = useState(false);
-            const [userEmail, setUserEmail] = useState('');
-            const [blogs, setBlogs] = useState([]);
-            const [posts, setPosts] = useState([]);
-            const [selectedBlogId, setSelectedBlogId] = useState(null);
-            const [error, setError] = useState(null);
-            const [loading, setLoading] = useState(false);
-            const [isApiLoaded, setIsApiLoaded] = useState(false); // New state to track if gapi is fully loaded
-
-            // Google API client ID from the user's prompt
-            const CLIENT_ID = '329662306799-jphpgpts06t60pheok0arb8iss0g2pvv.apps.googleusercontent.com';
-            // Scopes required for Blogger API access
-            const SCOPES = 'https://www.googleapis.com/auth/blogger https://www.googleapis.com/auth/userinfo.email';
-
-            // Effect to load Google API client library
-            useEffect(() => {
-                // Load the Google API client library
-                const script = document.createElement('script');
-                script.src = 'https://apis.google.com/js/api.js';
-                script.onload = () => {
-                    // Load the 'client' library first, then initialize
-                    gapi.load('client', () => {
-                        gapi.client.init({
-                            clientId: CLIENT_ID,
-                            scope: SCOPES,
-                            // Explicitly load discovery document for Blogger API
-                            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/blogger/v3/rest']
-                        }).then(() => {
-                            // After client is initialized, load 'auth2'
-                            gapi.load('auth2', () => {
-                                // Now auth2 is definitely ready
-                                gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-                                updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-                                setIsApiLoaded(true); // Set API loaded to true only after full initialization
-                            });
-                        }).catch(err => {
-                            setError(`خطأ في تهيئة عميل Google API: ${err.details || err.message}`);
-                            console.error('Error initializing Google API client:', err);
-                        });
-                    });
-                };
-                script.onerror = () => {
-                    setError('فشل تحميل مكتبة Google API. يرجى التحقق من اتصالك بالإنترنت.');
-                };
-                document.body.appendChild(script);
-            }, []);
-
-            // Update sign-in status and user information
-            const updateSigninStatus = (signedIn) => {
-                setIsSignedIn(signedIn);
-                if (signedIn) {
-                    const profile = gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile();
-                    setUserEmail(profile.getEmail());
-                    // If signed in, automatically load blogs
-                    listBlogs();
+                // Sign in the user, preferring the custom token if available.
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (initialAuthToken) {
+                    await signInWithCustomToken(window.auth, initialAuthToken);
                 } else {
-                    setUserEmail('');
-                    setBlogs([]);
-                    setPosts([]);
-                    setSelectedBlogId(null);
+                    await signInAnonymously(window.auth);
                 }
-            };
 
-            // Handle sign-in
-            const handleSignInClick = async () => {
-                if (!isApiLoaded) {
-                    setError('جاري تحميل Google API. يرجى الانتظار قليلاً.');
-                    return;
-                }
-                try {
-                    await gapi.auth2.getAuthInstance().signIn();
-                } catch (err) {
-                    setError(`خطأ في تسجيل الدخول: ${err.details || err.message}`);
-                    console.error('Error signing in:', err);
-                }
-            };
+                // Listen for auth state changes to get the user ID.
+                onAuthStateChanged(window.auth, (user) => {
+                    if (user) {
+                        window.userId = user.uid;
+                        console.log('User signed in with UID:', window.userId);
+                        // Start listening to ratings after authentication is ready.
+                        listenForRatings();
+                        document.getElementById('userIdDisplay').textContent = `معرّف المستخدم: ${window.userId}`;
+                        document.getElementById('userIdDisplay').classList.remove('hidden');
+                    } else {
+                        window.userId = null;
+                        console.log('User is signed out.');
+                        document.getElementById('userIdDisplay').classList.add('hidden');
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization or authentication failed:", error);
+            }
+        });
 
-            // Handle sign-out
-            const handleSignOutClick = async () => {
-                if (!isApiLoaded) return; // Prevent action if API not loaded
-                try {
-                    await gapi.auth2.getAuthInstance().signOut();
-                } catch (err) {
-                    setError(`خطأ في تسجيل الخروج: ${err.details || err.message}`);
-                    console.error('Error signing out:', err);
-                }
-            };
+        // Function to submit a new rating to Firestore.
+        window.submitRating = async () => {
+            if (!window.userId) {
+                showMessage('الرجاء الانتظار حتى يتم التحقق من المستخدم.', 'text-red-400');
+                return;
+            }
+            const rating = document.getElementById('starRating').getAttribute('data-rating');
+            const comment = document.getElementById('ratingComment').value;
+            const tool = document.getElementById('ratingTool').value;
 
-            // List blogs for the authenticated user
-            const listBlogs = async () => {
-                if (!isApiLoaded) return; // Prevent action if API not loaded
-                setLoading(true);
-                setError(null);
-                try {
-                    // No need to gapi.client.load('blogger', 'v3') here if discoveryDocs is set in init
-                    // The API should be ready from the initial client setup
-                    const response = await gapi.client.blogger.blogs.listByUser({
-                        userId: 'self', // 'self' refers to the authenticated user
-                    });
-                    setBlogs(response.result.items || []);
-                } catch (err) {
-                    setError(`خطأ في جلب المدونات: ${err.result?.error?.message || err.message}`);
-                    console.error('Error listing blogs:', err);
-                } finally {
-                    setLoading(false);
-                }
-            };
+            if (!rating || rating === "0") {
+                showMessage('الرجاء اختيار تقييم بالنجوم.', 'text-red-400');
+                return;
+            }
 
-            // List posts for a selected blog
-            const listPosts = async (blogId) => {
-                if (!isApiLoaded) return; // Prevent action if API not loaded
-                setLoading(true);
-                setError(null);
-                try {
-                    // No need to gapi.client.load('blogger', 'v3') here if discoveryDocs is set in init
-                    const response = await gapi.client.blogger.posts.list({
-                        blogId: blogId,
-                    });
-                    setPosts(response.result.items || []);
-                    setSelectedBlogId(blogId);
-                } catch (err) {
-                    setError(`خطأ في جلب المشاركات: ${err.result?.error?.message || err.message}`);
-                    console.error('Error listing posts:', err);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 flex flex-col items-center justify-center p-4 font-sans">
-                    <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-3xl border border-gray-200">
-                        <h1 className="text-4xl font-extrabold text-center text-gray-800 mb-8">
-                            أداة Blogger API
-                        </h1>
-
-                        {/* Error Message Display */}
-                        {error && (
-                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6 text-right" role="alert">
-                                <strong className="font-bold">خطأ!</strong>
-                                <span className="block sm:inline mr-2">{error}</span>
-                            </div>
-                        )}
-
-                        {/* Authentication Section */}
-                        <div className="flex flex-col items-center justify-center mb-8 space-y-4">
-                            {isSignedIn ? (
-                                <>
-                                    <p className="text-lg text-gray-700 text-center">
-                                        مرحبًا بك، <span className="font-semibold text-blue-600">{userEmail}</span>!
-                                    </p>
-                                    <button
-                                        onClick={handleSignOutClick}
-                                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75"
-                                    >
-                                        تسجيل الخروج
-                                    </button>
-                                </>
-                            ) : (
-                                <button
-                                    onClick={handleSignInClick}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-75"
-                                    disabled={!isApiLoaded} /* Disable button until API is loaded */
-                                >
-                                    {isApiLoaded ? 'تسجيل الدخول باستخدام Google' : 'جاري تحميل API...'}
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Loading Indicator */}
-                        {loading && (
-                            <div className="flex justify-center items-center mb-6">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                                <p className="mr-3 text-blue-600 font-medium">جار التحميل...</p>
-                            </div>
-                        )}
-
-                        {/* Blogs Section */}
-                        {isSignedIn && (
-                            <div className="mb-8">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">مدوناتك</h2>
-                                {blogs.length > 0 ? (
-                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {blogs.map((blog) => (
-                                            <li
-                                                key={blog.id}
-                                                className={`bg-gray-50 p-4 rounded-lg shadow-sm border ${selectedBlogId === blog.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'} cursor-pointer hover:bg-gray-100 transition duration-200 ease-in-out text-right`}
-                                                onClick={() => listPosts(blog.id)}
-                                            >
-                                                <h3 className="text-xl font-semibold text-gray-700">{blog.name}</h3>
-                                                <p className="text-sm text-gray-500 truncate text-left" dir="ltr">{blog.url}</p>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    !loading && <p className="text-center text-gray-600">لا توجد مدونات متاحة.</p>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Posts Section */}
-                        {isSignedIn && selectedBlogId && (
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">مشاركات المدونة</h2>
-                                {posts.length > 0 ? (
-                                    <ul className="space-y-4">
-                                        {posts.map((post) => (
-                                            <li key={post.id} className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200 text-right">
-                                                <h3 className="text-xl font-semibold text-gray-700 mb-1">{post.title}</h3>
-                                                <p className="text-sm text-gray-500">
-                                                    تاريخ النشر: {new Date(post.published).toLocaleDateString('ar-EG')}
-                                                </p>
-                                                <a
-                                                    href={post.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-500 hover:underline text-sm mt-2 inline-block text-left"
-                                                    dir="ltr"
-                                                >
-                                                    عرض المشاركة
-                                                </a>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    !loading && <p className="text-center text-gray-600">لا توجد مشاركات لهذه المدونة.</p>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
+            try {
+                // Use a public collection for sharing ratings among users.
+                const ratingsRef = collection(window.db, 'artifacts', window.currentAppId, 'public', 'data', 'tool_ratings');
+                await addDoc(ratingsRef, {
+                    userId: window.userId,
+                    tool: tool,
+                    rating: parseInt(rating),
+                    comment: comment,
+                    timestamp: serverTimestamp()
+                });
+                showMessage('تم إرسال تقييمك بنجاح!', 'text-green-400');
+                // Reset the form after submission
+                document.getElementById('starRating').setAttribute('data-rating', '0');
+                document.getElementById('ratingComment').value = '';
+                document.querySelectorAll('.star-icon').forEach(star => star.classList.remove('text-yellow-400'));
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showMessage('فشل إرسال التقييم.', 'text-red-400');
+            }
         };
 
-        // Render the App component into the 'root' div
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        // Function to listen for and display ratings in real-time.
+        window.listenForRatings = () => {
+            const ratingsRef = collection(window.db, 'artifacts', window.currentAppId, 'public', 'data', 'tool_ratings');
+            const q = query(ratingsRef);
+
+            onSnapshot(q, (querySnapshot) => {
+                const ratingsList = document.getElementById('ratingsList');
+                ratingsList.innerHTML = '';
+                const ratings = [];
+                querySnapshot.forEach((doc) => {
+                    ratings.push(doc.data());
+                });
+
+                // Sort by timestamp if available, otherwise by rating.
+                ratings.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                ratings.forEach(rating => {
+                    const stars = '★'.repeat(rating.rating) + '☆'.repeat(5 - rating.rating);
+                    const comment = rating.comment || 'لا يوجد تعليق.';
+                    const userDisplayId = rating.userId.substring(0, 8); // Display full user ID
+                    const listItem = `
+                        <div class="p-4 rounded-lg bg-gray-700 mb-2">
+                            <div class="text-sm text-gray-400">معرّف المستخدم: <span class="text-xs">${rating.userId}</span></div>
+                            <div class="text-lg font-bold">${rating.tool}</div>
+                            <div class="text-yellow-400">${stars}</div>
+                            <p class="text-gray-300 mt-1 text-sm">${comment}</p>
+                        </div>
+                    `;
+                    ratingsList.innerHTML += listItem;
+                });
+            });
+        };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #1a1a2e;
+            color: #e4e4e4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 1rem;
+        }
+        .card {
+            background-color: #2e245a;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+        .btn-primary {
+            background-image: linear-gradient(45deg, #ff6b6b, #f06595);
+            border-radius: 9999px;
+            padding: 0.75rem 2rem;
+            color: white;
+            font-weight: bold;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(240, 101, 149, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(240, 101, 149, 0.6);
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .custom-file-upload {
+            border: 2px dashed #999;
+            background-color: #3e336d;
+            cursor: pointer;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        .image-container {
+            position: relative;
+            width: 100%;
+            padding-top: 100%;
+            border: 2px solid #5a4b92;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background-color: #1a1a2e;
+        }
+        .image-container.video-aspect {
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        }
+        .image-container.manhwa-aspect {
+            padding-top: 200%; /* A tall aspect ratio for webtoons */
+        }
+        .image-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .tab-button.active {
+            background-color: #5a4b92;
+            color: #fff;
+        }
+        .tab-button:not(.active) {
+            background-color: #3e336d;
+            color: #ccc;
+        }
+        .tab-button:not(.active):hover {
+             transform: translateY(-2px);
+        }
+        .progress-bar {
+            height: 8px;
+            background-color: #4a4a6b;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background-image: linear-gradient(45deg, #f06595, #ff6b6b);
+            transition: width 0.3s ease;
+        }
+        .star-icon {
+            font-size: 2rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container text-center">
+        <h1 class="text-4xl font-bold mb-4 text-purple-400">
+            أداة صناعة الأنمي والمانجا المتقدمة
+        </h1>
+        <p class="text-lg text-gray-300 mb-8">
+            قم بإنشاء فنون أنمي ومانجا احترافية بسهولة.
+        </p>
+        <p id="userIdDisplay" class="hidden text-sm text-gray-500 mb-4"></p>
+
+        <!-- Tabs for different modes -->
+        <div class="flex justify-center flex-wrap gap-4 mb-8">
+            <button id="modeTab1" class="tab-button active">
+                تحويل رسمة إلى أنمي
+            </button>
+            <button id="modeTab2" class="tab-button">
+                تحويل مانجا إلى مشهد أنمي
+            </button>
+            <button id="modeTab3" class="tab-button">
+                سيناريو ومشاهد أنمي
+            </button>
+            <button id="modeTab4" class="tab-button">
+                توليد مانجا كورية
+            </button>
+            <button id="modeTab5" class="tab-button">
+                تحويل رسمة إلى مانهوا
+            </button>
+            <button id="modeTab6" class="tab-button">
+                قصة إلى لوحة مانهوا
+            </button>
+            <button id="modeTab7" class="tab-button">
+                توليد مانجا يابانية
+            </button>
+            <button id="modeTab8" class="tab-button">
+                تقييم الأدوات
+            </button>
+        </div>
+
+        <!-- Mode 1: Sketch to Anime -->
+        <div id="modeContent1">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card flex flex-col items-center">
+                    <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                        الرسمة الأصلية
+                    </h2>
+                    <label for="imageUpload1" class="custom-file-upload w-full mb-4">
+                        <svg class="mx-auto w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span id="uploadText1" class="text-gray-400">انقر هنا لتحميل الصورة</span>
+                    </label>
+                    <input type="file" id="imageUpload1" accept="image/*">
+                    <div id="originalImageContainer1" class="image-container w-full">
+                        <img id="originalImage1" src="https://placehold.co/400x400/2a2a2a/ffffff?text=لا+يوجد+صورة" alt="Original Image">
+                    </div>
+                </div>
+
+                <div class="card flex flex-col items-center">
+                    <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                        النتيجة
+                    </h2>
+                    <div id="generatedImageContainer1" class="image-container w-full mb-6">
+                        <img id="generatedImage1" src="https://placehold.co/400x400/2a2a2a/ffffff?text=ستظهر+النتيجة+هنا" alt="Generated Image">
+                    </div>
+                    
+                    <div class="w-full space-y-4">
+                        <select id="styleSelect1" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                            <option value="none" selected>اختر أسلوب الأنمي</option>
+                            <option value="Ufotable">استوديو Ufotable (سينمائي)</option>
+                            <option value="Attack on Titan">هجوم العمالقة</option>
+                            <option value="Studio Ghibli">استوديو غيبلي</option>
+                            <option value="One Piece">ون بيس</option>
+                            <option value="My Hero Academia">أكاديمية بطلي</option>
+                            <option value="Jujutsu Kaisen">جوجوتسو كايسن</option>
+                            <option value="Demon Slayer">قاتل الشياطين</option>
+                            <option value="Haikyuu!!">هايكيو!!</option>
+                            <option value="Japanese Manga Style">مانجا يابانية</option>
+                            <option value="Chinese Manhua Style with professional coloring">مانهوا صينية مع تلوين احترافي</option>
+                            <option value="Korean Webtoon Style with professional coloring">ويبتون كوري مع تلوين احترافي</option>
+                        </select>
+                        <textarea id="promptInput1" rows="3" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="أضف تفاصيل إضافية..."></textarea>
+                        
+                        <button id="generateBtn1" class="btn-primary w-full flex items-center justify-center space-x-2 space-x-reverse">
+                            <span id="generateText1">تحويل الرسمة</span>
+                            <div id="spinner1" class="spinner hidden"></div>
+                        </button>
+                        <a id="downloadLink1" href="#" download="generated_anime_art.png" class="hidden text-center text-gray-400 hover:text-white transition-colors duration-200">
+                          <svg class="w-6 h-6 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                          تنزيل الصورة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode 2: Manga to Anime -->
+        <div id="modeContent2" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card flex flex-col items-center">
+                    <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                        صفحة المانجا الأصلية
+                    </h2>
+                    <label for="imageUpload2" class="custom-file-upload w-full mb-4">
+                        <svg class="mx-auto w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span id="uploadText2" class="text-gray-400">انقر هنا لتحميل الصورة</span>
+                    </label>
+                    <input type="file" id="imageUpload2" accept="image/*">
+                    <div id="originalImageContainer2" class="image-container w-full">
+                        <img id="originalImage2" src="https://placehold.co/400x400/2a2a2a/ffffff?text=لا+يوجد+صورة" alt="Original Image">
+                    </div>
+                </div>
+
+                <div class="card flex flex-col items-center">
+                    <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                        مشهد الأنمي (16:9)
+                    </h2>
+                    <div id="generatedImageContainer2" class="image-container video-aspect w-full mb-6">
+                        <img id="generatedImage2" src="https://placehold.co/711x400/2a2a2a/ffffff?text=ستظهر+النتيجة+هنا+16:9" alt="Generated Image">
+                    </div>
+                    
+                    <div class="w-full space-y-4">
+                        <select id="styleSelect2" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                            <option value="none" selected>اختر أسلوب الأنمي</option>
+                            <option value="Ufotable">استوديو Ufotable (سينمائي)</option>
+                            <option value="Attack on Titan">هجوم العمالقة</option>
+                            <option value="Studio Ghibli">استوديو غيبلي</option>
+                            <option value="One Piece">ون بيس</option>
+                            <option value="My Hero Academia">أكاديمية بطلي</option>
+                            <option value="Jujutsu Kaisen">جوجوتسو كايسن</option>
+                            <option value="Demon Slayer">قاتل الشياطين</option>
+                            <option value="Haikyuu!!">هايكيو!!</option>
+                        </select>
+                        <textarea id="promptInput2" rows="3" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="أضف تفاصيل إضافية..."></textarea>
+                        
+                        <button id="generateBtn2" class="btn-primary w-full flex items-center justify-center space-x-2 space-x-reverse">
+                            <span id="generateText2">تحويل المانجا</span>
+                            <div id="spinner2" class="spinner hidden"></div>
+                        </button>
+                        <a id="downloadLink2" href="#" download="generated_anime_scene.png" class="hidden text-center text-gray-400 hover:text-white transition-colors duration-200">
+                          <svg class="w-6 h-6 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                          تنزيل الصورة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode 3: Storyboard Generation -->
+        <div id="modeContent3" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card flex flex-col items-center">
+                    <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                        صفحة المانجا الأصلية
+                    </h2>
+                    <label for="imageUpload3" class="custom-file-upload w-full mb-4">
+                        <svg class="mx-auto w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span id="uploadText3" class="text-gray-400">انقر هنا لتحميل الصورة</span>
+                    </label>
+                    <input type="file" id="imageUpload3" accept="image/*">
+                    <div id="originalImageContainer3" class="image-container w-full">
+                        <img id="originalImage3" src="https://placehold.co/400x400/2a2a2a/ffffff?text=لا+يوجد+صورة" alt="Original Image">
+                    </div>
+                </div>
+                <div class="card flex flex-col items-center">
+                    <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                        السيناريو والمشاهد
+                    </h2>
+                    <textarea id="storyboardOutput" rows="15" class="w-full p-3 mb-4 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="سيظهر هنا وصف المشهد وزوايا الكاميرا..."></textarea>
+                    
+                    <div class="w-full space-y-4">
+                        <button id="generateStoryboardBtn" class="btn-primary w-full flex items-center justify-center space-x-2 space-x-reverse">
+                            <span id="generateStoryboardText">توليد السيناريو</span>
+                            <div id="storyboardSpinner" class="spinner hidden"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode 4: Text to Manhwa -->
+        <div id="modeContent4" class="hidden">
+            <div class="card flex flex-col items-center">
+                <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                    توليد لوحات مانجا كورية (Manhwa)
+                </h2>
+                <textarea id="manhwaPrompt" rows="6" class="w-full p-3 mb-4 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="اكتب وصفًا للمشهد بالتفصيل (مثال: 'شاب وسيم يقاتل تنينًا في مدينة مستقبلية. يصرخ بغضب. أضف فقاعات حوار')."></textarea>
+                
+                <div class="w-full space-y-4">
+                    <label for="manhwaStyle" class="block text-right text-sm font-medium text-gray-400">
+                        أسلوب الرسم
+                    </label>
+                    <select id="manhwaStyle" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <option value="realistic">واقعي (Realistic)</option>
+                        <option value="chibi">لطيف (SD / Chibi)</option>
+                        <option value="comic">هزلي (Comic)</option>
+                        <option value="ink-style">حبر أسود (Ink style)</option>
+                    </select>
+
+                    <label for="manhwaColor" class="block text-right text-sm font-medium text-gray-400">
+                        اللون
+                    </label>
+                    <select id="manhwaColor" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <option value="colored">ملون (Colored)</option>
+                        <option value="black_white">أبيض وأسود (Black & White)</option>
+                    </select>
+                </div>
+                
+                <div class="w-full bg-purple-900 rounded-full h-2 my-6">
+                    <div id="manhwaProgress" class="bg-pink-500 h-2 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                </div>
+                
+                <div id="generatedManhwaContainer" class="image-container manhwa-aspect w-full mb-6">
+                    <img id="generatedManhwaImage" src="https://placehold.co/400x800/2a2a2a/ffffff?text=ستظهر+اللوحة+هنا" alt="Generated Manhwa">
+                </div>
+
+                <div class="w-full space-y-4">
+                    <button id="generateManhwaBtn" class="btn-primary w-full flex items-center justify-center space-x-2 space-x-reverse">
+                        <span id="generateManhwaText">توليد اللوحة</span>
+                        <div id="manhwaSpinner" class="spinner hidden"></div>
+                    </button>
+                    <a id="downloadManhwaLink" href="#" download="generated_manhwa.png" class="hidden text-center text-gray-400 hover:text-white transition-colors duration-200">
+                      <svg class="w-6 h-6 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                      تنزيل اللوحة
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode 5: Sketch to Manhwa -->
+        <div id="modeContent5" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card flex flex-col items-center">
+                    <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                        الرسمة الأصلية
+                    </h2>
+                    <label for="imageUpload5" class="custom-file-upload w-full mb-4">
+                        <svg class="mx-auto w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span id="uploadText5" class="text-gray-400">انقر هنا لتحميل الصورة</span>
+                    </label>
+                    <input type="file" id="imageUpload5" accept="image/*">
+                    <div id="originalImageContainer5" class="image-container w-full">
+                        <img id="originalImage5" src="https://placehold.co/400x400/2a2a2a/ffffff?text=لا+يوجد+صورة" alt="Original Image">
+                    </div>
+                </div>
+
+                <div class="card flex flex-col items-center">
+                    <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                        النتيجة
+                    </h2>
+                    <div id="generatedImageContainer5" class="image-container manhwa-aspect w-full mb-6">
+                        <img id="generatedImage5" src="https://placehold.co/400x800/2a2a2a/ffffff?text=ستظهر+النتيجة+هنا" alt="Generated Manhwa">
+                    </div>
+                    
+                    <div class="w-full space-y-4">
+                        <label for="manhwaStyle2" class="block text-right text-sm font-medium text-gray-400">
+                            أسلوب الرسم
+                        </label>
+                        <select id="manhwaStyle2" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                            <option value="realistic">واقعي (Realistic)</option>
+                            <option value="chibi">لطيف (SD / Chibi)</option>
+                            <option value="comic">هزلي (Comic)</option>
+                            <option value="ink-style">حبر أسود (Ink style)</option>
+                        </select>
+                        <textarea id="promptInput5" rows="3" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="أضف تفاصيل إضافية..."></textarea>
+                        
+                        <button id="generateBtn5" class="btn-primary w-full flex items-center justify-center space-x-2 space-x-reverse">
+                            <span id="generateText5">تحويل الرسمة</span>
+                            <div id="spinner5" class="spinner hidden"></div>
+                        </button>
+                        <a id="downloadLink5" href="#" download="generated_manhwa_art.png" class="hidden text-center text-gray-400 hover:text-white transition-colors duration-200">
+                          <svg class="w-6 h-6 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                          تنزيل الصورة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode 6: Story to Manhwa -->
+        <div id="modeContent6" class="hidden">
+            <div class="card flex flex-col items-center">
+                <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                    توليد لوحة مانهوا احترافية من قصة
+                </h2>
+                <textarea id="storyManhwaPrompt" rows="6" class="w-full p-3 mb-4 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="اكتب وصفًا للقصة أو المشهد بالتفصيل (مثال: 'شاب وسيم يقاتل تنينًا في مدينة مستقبلية. يصرخ بغضب. أضف فقاعات حوار')."></textarea>
+                
+                <div class="w-full space-y-4">
+                    <label for="manhwaLayout" class="block text-right text-sm font-medium text-gray-400">
+                        التخطيط
+                    </label>
+                    <select id="manhwaLayout" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <option value="single-panel">لوحة واحدة (Single Panel)</option>
+                        <option value="close-up">لقطة مقربة (Close-up)</option>
+                        <option value="wide-shot">لقطة واسعة (Wide Shot)</option>
+                        <option value="montage">مونتاج (Montage)</option>
+                    </select>
+                </div>
+
+                <div class="w-full bg-purple-900 rounded-full h-2 my-6">
+                    <div id="storyManhwaProgress" class="bg-pink-500 h-2 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                </div>
+                
+                <div id="generatedStoryManhwaContainer" class="image-container manhwa-aspect w-full mb-6">
+                    <img id="generatedStoryManhwaImage" src="https://placehold.co/400x800/2a2a2a/ffffff?text=ستظهر+اللوحة+هنا" alt="Generated Manhwa">
+                </div>
+
+                <div class="w-full space-y-4">
+                    <button id="generateStoryManhwaBtn" class="btn-primary w-full flex items-center justify-center space-x-2 space-x-reverse">
+                        <span id="generateStoryManhwaText">توليد اللوحة</span>
+                        <div id="storyManhwaSpinner" class="spinner hidden"></div>
+                    </button>
+                    <a id="downloadStoryManhwaLink" href="#" download="generated_manhwa.png" class="hidden text-center text-gray-400 hover:text-white transition-colors duration-200">
+                      <svg class="w-6 h-6 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                      تنزيل اللوحة
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode 7: Japanese Manga -->
+        <div id="modeContent7" class="hidden">
+            <div class="card flex flex-col items-center">
+                <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                    توليد لوحة مانجا يابانية
+                </h2>
+                <textarea id="japaneseMangaPrompt" rows="6" class="w-full p-3 mb-4 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="اكتب وصفًا للمشهد (مثال: 'فتاة شابة ترتدي زيًا مدرسيًا يابانيًا تلوح بابتسامة عند محطة قطار.')."></textarea>
+                
+                <div class="w-full bg-purple-900 rounded-full h-2 my-6">
+                    <div id="japaneseMangaProgress" class="bg-pink-500 h-2 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                </div>
+                
+                <div id="generatedJapaneseMangaContainer" class="image-container w-full mb-6">
+                    <img id="generatedJapaneseMangaImage" src="https://placehold.co/400x400/2a2a2a/ffffff?text=ستظهر+المانجا+هنا" alt="Generated Japanese Manga">
+                </div>
+
+                <div class="w-full space-y-4">
+                    <button id="generateJapaneseMangaBtn" class="btn-primary w-full flex items-center justify-center space-x-2 space-x-reverse">
+                        <span id="generateJapaneseMangaText">توليد المانجا</span>
+                        <div id="japaneseMangaSpinner" class="spinner hidden"></div>
+                    </button>
+                    <a id="downloadJapaneseMangaLink" href="#" download="generated_japanese_manga.png" class="hidden text-center text-gray-400 hover:text-white transition-colors duration-200">
+                      <svg class="w-6 h-6 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                      تنزيل المانجا
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode 8: Tool Rating -->
+        <div id="modeContent8" class="hidden">
+            <div class="card flex flex-col items-center mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                    تقييم الأدوات
+                </h2>
+                <div class="w-full space-y-4">
+                    <label for="ratingTool" class="block text-right text-sm font-medium text-gray-400">
+                        اختر الأداة للتقييم
+                    </label>
+                    <select id="ratingTool" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <option value="الجميع">الكل</option>
+                        <option value="تحويل رسمة إلى أنمي">تحويل رسمة إلى أنمي</option>
+                        <option value="تحويل مانجا إلى مشهد أنمي">تحويل مانجا إلى مشهد أنمي</option>
+                        <option value="توليد مانجا كورية">توليد مانجا كورية</option>
+                        <option value="توليد مانجا يابانية">توليد مانجا يابانية</option>
+                    </select>
+
+                    <label for="starRating" class="block text-right text-sm font-medium text-gray-400">
+                        تقييمك
+                    </label>
+                    <div id="starRating" class="flex justify-center text-gray-400" data-rating="0">
+                        <span class="star-icon" data-value="1">★</span>
+                        <span class="star-icon" data-value="2">★</span>
+                        <span class="star-icon" data-value="3">★</span>
+                        <span class="star-icon" data-value="4">★</span>
+                        <span class="star-icon" data-value="5">★</span>
+                    </div>
+
+                    <textarea id="ratingComment" rows="3" class="w-full p-3 bg-purple-900 rounded-lg text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="أضف تعليقًا اختياريًا..."></textarea>
+                    
+                    <button onclick="submitRating()" class="btn-primary w-full">
+                        إرسال التقييم
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="text-2xl font-semibold mb-4 text-pink-300">
+                    آخر التقييمات
+                </h2>
+                <div id="ratingsList" class="space-y-4">
+                    <!-- Ratings will be loaded here dynamically -->
+                </div>
+            </div>
+        </div>
+        
+        <div id="message" class="mt-4 text-center font-bold"></div>
+    </div>
+
+    <script>
+        // Tab elements
+        const modeTab1 = document.getElementById('modeTab1');
+        const modeTab2 = document.getElementById('modeTab2');
+        const modeTab3 = document.getElementById('modeTab3');
+        const modeTab4 = document.getElementById('modeTab4');
+        const modeTab5 = document.getElementById('modeTab5');
+        const modeTab6 = document.getElementById('modeTab6');
+        const modeTab7 = document.getElementById('modeTab7');
+        const modeTab8 = document.getElementById('modeTab8');
+        const modeContent1 = document.getElementById('modeContent1');
+        const modeContent2 = document.getElementById('modeContent2');
+        const modeContent3 = document.getElementById('modeContent3');
+        const modeContent4 = document.getElementById('modeContent4');
+        const modeContent5 = document.getElementById('modeContent5');
+        const modeContent6 = document.getElementById('modeContent6');
+        const modeContent7 = document.getElementById('modeContent7');
+        const modeContent8 = document.getElementById('modeContent8');
+        const message = document.getElementById('message');
+        
+        // Mode 1 Elements
+        const imageUpload1 = document.getElementById('imageUpload1');
+        const originalImage1 = document.getElementById('originalImage1');
+        const generatedImage1 = document.getElementById('generatedImage1');
+        const generateBtn1 = document.getElementById('generateBtn1');
+        const spinner1 = document.getElementById('spinner1');
+        const generateText1 = document.getElementById('generateText1');
+        const styleSelect1 = document.getElementById('styleSelect1');
+        const promptInput1 = document.getElementById('promptInput1');
+        const downloadLink1 = document.getElementById('downloadLink1');
+        const uploadText1 = document.getElementById('uploadText1');
+
+        // Mode 2 Elements
+        const imageUpload2 = document.getElementById('imageUpload2');
+        const originalImage2 = document.getElementById('originalImage2');
+        const generatedImage2 = document.getElementById('generatedImage2');
+        const generateBtn2 = document.getElementById('generateBtn2');
+        const spinner2 = document.getElementById('spinner2');
+        const generateText2 = document.getElementById('generateText2');
+        const styleSelect2 = document.getElementById('styleSelect2');
+        const promptInput2 = document.getElementById('promptInput2');
+        const downloadLink2 = document.getElementById('downloadLink2');
+        const uploadText2 = document.getElementById('uploadText2');
+
+        // Mode 3 Elements (Storyboard)
+        const imageUpload3 = document.getElementById('imageUpload3');
+        const originalImage3 = document.getElementById('originalImage3');
+        const storyboardOutput = document.getElementById('storyboardOutput');
+        const generateStoryboardBtn = document.getElementById('generateStoryboardBtn');
+        const storyboardSpinner = document.getElementById('storyboardSpinner');
+        const generateStoryboardText = document.getElementById('generateStoryboardText');
+        const uploadText3 = document.getElementById('uploadText3');
+
+        // Mode 4 Elements (Manhwa)
+        const manhwaPrompt = document.getElementById('manhwaPrompt');
+        const manhwaStyle = document.getElementById('manhwaStyle');
+        const manhwaColor = document.getElementById('manhwaColor');
+        const generateManhwaBtn = document.getElementById('generateManhwaBtn');
+        const generatedManhwaImage = document.getElementById('generatedManhwaImage');
+        const manhwaSpinner = document.getElementById('manhwaSpinner');
+        const generateManhwaText = document.getElementById('generateManhwaText');
+        const downloadManhwaLink = document.getElementById('downloadManhwaLink');
+        const manhwaProgress = document.getElementById('manhwaProgress');
+
+        // Mode 5 Elements (Rough Sketch to Manhwa)
+        const imageUpload5 = document.getElementById('imageUpload5');
+        const originalImage5 = document.getElementById('originalImage5');
+        const generatedImage5 = document.getElementById('generatedImage5');
+        const generateBtn5 = document.getElementById('generateBtn5');
+        const spinner5 = document.getElementById('spinner5');
+        const generateText5 = document.getElementById('generateText5');
+        const manhwaStyle2 = document.getElementById('manhwaStyle2');
+        const promptInput5 = document.getElementById('promptInput5');
+        const downloadLink5 = document.getElementById('downloadLink5');
+        const uploadText5 = document.getElementById('uploadText5');
+
+        // Mode 6 Elements (Story to Manhwa)
+        const storyManhwaPrompt = document.getElementById('storyManhwaPrompt');
+        const manhwaLayout = document.getElementById('manhwaLayout');
+        const generateStoryManhwaBtn = document.getElementById('generateStoryManhwaBtn');
+        const generatedStoryManhwaImage = document.getElementById('generatedStoryManhwaImage');
+        const storyManhwaSpinner = document.getElementById('storyManhwaSpinner');
+        const generateStoryManhwaText = document.getElementById('generateStoryManhwaText');
+        const downloadStoryManhwaLink = document.getElementById('downloadStoryManhwaLink');
+        const storyManhwaProgress = document.getElementById('storyManhwaProgress');
+
+        // Mode 7 Elements (Japanese Manga)
+        const japaneseMangaPrompt = document.getElementById('japaneseMangaPrompt');
+        const generateJapaneseMangaBtn = document.getElementById('generateJapaneseMangaBtn');
+        const generatedJapaneseMangaImage = document.getElementById('generatedJapaneseMangaImage');
+        const japaneseMangaSpinner = document.getElementById('japaneseMangaSpinner');
+        const generateJapaneseMangaText = document.getElementById('generateJapaneseMangaText');
+        const downloadJapaneseMangaLink = document.getElementById('downloadJapaneseMangaLink');
+        const japaneseMangaProgress = document.getElementById('japaneseMangaProgress');
+
+        // Mode 8 Elements (Rating)
+        const starRatingContainer = document.getElementById('starRating');
+        
+        let originalBase64_1 = null;
+        let originalBase64_2 = null;
+        let originalBase64_3 = null;
+        let originalBase64_5 = null;
+
+        const allTabs = [modeTab1, modeTab2, modeTab3, modeTab4, modeTab5, modeTab6, modeTab7, modeTab8];
+        const allContents = [modeContent1, modeContent2, modeContent3, modeContent4, modeContent5, modeContent6, modeContent7, modeContent8];
+
+        function switchMode(modeIndex) {
+            allTabs.forEach((tab, index) => {
+                if (index === modeIndex) {
+                    tab.classList.add('active');
+                    allContents[index].classList.remove('hidden');
+                } else {
+                    tab.classList.remove('active');
+                    allContents[index].classList.add('hidden');
+                }
+            });
+            showMessage('', '');
+        }
+
+        modeTab1.addEventListener('click', () => switchMode(0));
+        modeTab2.addEventListener('click', () => switchMode(1));
+        modeTab3.addEventListener('click', () => switchMode(2));
+        modeTab4.addEventListener('click', () => switchMode(3));
+        modeTab5.addEventListener('click', () => switchMode(4));
+        modeTab6.addEventListener('click', () => switchMode(5));
+        modeTab7.addEventListener('click', () => switchMode(6));
+        modeTab8.addEventListener('click', () => switchMode(7));
+
+        // Star rating logic for Mode 8
+        starRatingContainer.addEventListener('click', (e) => {
+            const star = e.target.closest('.star-icon');
+            if (star) {
+                const value = parseInt(star.getAttribute('data-value'));
+                starRatingContainer.setAttribute('data-rating', value);
+                document.querySelectorAll('.star-icon').forEach(s => {
+                    s.classList.toggle('text-yellow-400', parseInt(s.getAttribute('data-value')) <= value);
+                });
+            }
+        });
+
+        // --- Event Listeners for Uploads ---
+        imageUpload1.addEventListener('change', (e) => handleImageUpload(e, originalImage1, uploadText1, (base64) => originalBase64_1 = base64));
+        imageUpload2.addEventListener('change', (e) => handleImageUpload(e, originalImage2, uploadText2, (base64) => originalBase64_2 = base64));
+        imageUpload3.addEventListener('change', (e) => handleImageUpload(e, originalImage3, uploadText3, (base64) => originalBase64_3 = base64));
+        imageUpload5.addEventListener('change', (e) => handleImageUpload(e, originalImage5, uploadText5, (base64) => originalBase64_5 = base64));
+
+        function handleImageUpload(event, imgElement, textElement, callback) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imgElement.src = e.target.result;
+                    callback(e.target.result.split(',')[1]);
+                    textElement.textContent = 'تم تحميل الصورة بنجاح';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // This function handles API calls with retries and exponential backoff.
+        // It's a robust way to handle temporary network or server issues.
+        async function fetchWithExponentialBackoff(url, options, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) {
+                        return response;
+                    }
+                    if (response.status === 429 && i < retries - 1) { // 429 Too Many Requests
+                        console.warn(`Retrying due to rate limiting. Attempt ${i + 1} of ${retries}.`);
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2;
+                    } else {
+                        throw new Error(`Server responded with status: ${response.status}`);
+                    }
+                } catch (error) {
+                    if (i < retries - 1) {
+                        console.warn(`Fetch failed. Retrying in ${delay}ms. Error: ${error}`);
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2;
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+            throw new Error('Failed to fetch after multiple retries.');
+        }
+
+        // --- Core Generation Functions ---
+
+        // Image-to-Image Generation (Modes 1, 2, 5)
+        generateBtn1.addEventListener('click', () => generateImage(
+            originalBase64_1,
+            styleSelect1.value,
+            promptInput1.value,
+            generatedImage1,
+            generateText1,
+            spinner1,
+            generateBtn1,
+            downloadLink1
+        ));
+        
+        generateBtn2.addEventListener('click', () => generateImage(
+            originalBase64_2,
+            styleSelect2.value,
+            promptInput2.value,
+            generatedImage2,
+            generateText2,
+            spinner2,
+            generateBtn2,
+            downloadLink2,
+            true
+        ));
+
+        generateBtn5.addEventListener('click', () => generateManhwaFromSketch(
+            originalBase64_5,
+            manhwaStyle2.value,
+            promptInput5.value,
+            generatedImage5,
+            generateText5,
+            spinner5,
+            generateBtn5,
+            downloadLink5
+        ));
+
+        async function generateImage(base64Image, selectedStyle, userPrompt, outputImage, outputTextElem, spinnerElem, buttonElem, downloadLinkElem, isVideoScene = false) {
+            if (!base64Image) {
+                showMessage('الرجاء تحميل صورة أولاً.', 'text-red-400');
+                return;
+            }
+            
+            // Show loading state
+            outputTextElem.textContent = 'جاري التحويل...';
+            spinnerElem.classList.remove('hidden');
+            buttonElem.disabled = true;
+            showMessage('', '');
+            downloadLinkElem.classList.add('hidden');
+            const placeholderSize = selectedStyle === 'Ufotable' ? '711x400' : isVideoScene ? '711x400' : '400x400';
+            outputImage.src = `https://placehold.co/${placeholderSize}/2a2a2a/ffffff?text=جاري+التحويل`;
+            const isUfotable = selectedStyle === 'Ufotable';
+
+            try {
+                let fullPrompt = "Enhance this rough drawing into a professional, high-quality anime image with clean lines, detailed coloring, and cinematic lighting. Preserve the characters and core composition. Make it look like a still frame from a high-budget anime production.";
+                let isCinematic = isVideoScene;
+
+                if (isUfotable) {
+                    fullPrompt = `Enhance this image into a professional, high-quality anime scene in the cinematic style of Studio Ufotable. Use dynamic lighting, detailed shading, sharp lines, and a high-resolution feel. Preserve the core elements of the original drawing. The output should be a cinematic widescreen image.`;
+                    isCinematic = true;
+                } else if (selectedStyle !== 'none') {
+                    fullPrompt += ` Use the art style of a famous anime studio like ${selectedStyle}.`;
+                }
+
+                if (userPrompt) {
+                    fullPrompt += ` Additional instructions: ${userPrompt}.`;
+                }
+
+                if (isCinematic) {
+                     fullPrompt += " The output should have a 16:9 cinematic aspect ratio.";
+                }
+                
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: fullPrompt },
+                            { inlineData: { mimeType: 'image/png', data: base64Image } }
+                        ]
+                    }],
+                    generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+                };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+                
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                if (base64Data) {
+                    const imageUrl = `data:image/png;base64,${base64Data}`;
+                    outputImage.src = imageUrl;
+                    downloadLinkElem.href = imageUrl;
+                    downloadLinkElem.classList.remove('hidden');
+                    showMessage('تم التحويل بنجاح!', 'text-green-400');
+                } else {
+                    showMessage('عذرًا، حدث خطأ في معالجة الصورة.', 'text-red-400');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                showMessage('فشل الاتصال بالخادم.', 'text-red-400');
+            } finally {
+                outputTextElem.textContent = 'تحويل الرسمة';
+                spinnerElem.classList.add('hidden');
+                buttonElem.disabled = false;
+            }
+        }
+        
+        // Image-to-Text Generation (Mode 3 - Storyboard)
+        generateStoryboardBtn.addEventListener('click', async () => {
+            if (!originalBase64_3) {
+                showMessage('الرجاء تحميل صورة مانجا أولاً.', 'text-red-400');
+                return;
+            }
+
+            // Show loading state
+            storyboardOutput.value = 'جاري تحليل المشهد...';
+            generateStoryboardText.textContent = 'جاري التوليد...';
+            storyboardSpinner.classList.remove('hidden');
+            generateStoryboardBtn.disabled = true;
+            showMessage('', '');
+
+            try {
+                const fullPrompt = "Based on the provided manga panel image, act as a professional anime storyboard artist. Write a detailed script and description of how this scene would be adapted into an anime. The description should include the following:\n- A brief summary of the scene's content.\n- The setting and overall atmosphere.\n- The actions and emotions of the characters.\n- Specific camera angles (e.g., wide shot, close-up, medium shot, over-the-shoulder) and camera movements (e.g., dolly shot, panning).\n- Any visual effects or lighting instructions.\n\nKeep the output in a clear, easy-to-read text format.";
+
+                const payload = {
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: fullPrompt },
+                            { inlineData: { mimeType: 'image/png', data: originalBase64_3 } }
+                        ]
+                    }],
+                };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                const generatedText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (generatedText) {
+                    storyboardOutput.value = generatedText;
+                    showMessage('تم توليد السيناريو بنجاح!', 'text-green-400');
+                } else {
+                    storyboardOutput.value = 'عذرًا، فشل توليد السيناريو.';
+                    showMessage('عذرًا، فشل توليد السيناريو.', 'text-red-400');
+                }
+
+            } catch (error) {
+                console.error('API Error:', error);
+                storyboardOutput.value = 'فشل الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.';
+                showMessage('فشل الاتصال بالخادم.', 'text-red-400');
+            } finally {
+                generateStoryboardText.textContent = 'توليد السيناريو';
+                storyboardSpinner.classList.add('hidden');
+                generateStoryboardBtn.disabled = false;
+            }
+        });
+
+        // Text-to-Image Generation (Mode 4 - Manhwa)
+        generateManhwaBtn.addEventListener('click', async () => {
+            const textPrompt = manhwaPrompt.value.trim();
+            if (!textPrompt) {
+                showMessage('الرجاء كتابة وصف للقصة أولاً.', 'text-red-400');
+                return;
+            }
+            
+            // Show loading state
+            generateManhwaText.textContent = 'جاري التوليد...';
+            manhwaSpinner.classList.remove('hidden');
+            generateManhwaBtn.disabled = true;
+            showMessage('', '');
+            downloadManhwaLink.classList.add('hidden');
+            generatedManhwaImage.src = `https://placehold.co/400x800/2a2a2a/ffffff?text=جاري+التوليد`;
+
+            // Animate progress bar
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                if (progress > 95) progress = 95;
+                manhwaProgress.style.width = `${progress}%`;
+            }, 300);
+
+            try {
+                const styleMap = {
+                    'realistic': 'highly detailed, realistic manhwa style',
+                    'chibi': 'cute, super deformed (chibi) Korean cartoon style',
+                    'comic': 'dynamic, highly expressive comic style',
+                    'ink-style': 'classic black and white ink style with detailed hatching and dramatic shadows'
+                };
+                const colorMap = {
+                    'colored': 'professional studio-quality full color with dramatic lighting',
+                    'black_white': 'monochromatic, black and white shading and high contrast'
+                };
+
+                const selectedStyle = styleMap[manhwaStyle.value];
+                const selectedColor = colorMap[manhwaColor.value];
+
+                const fullPrompt = `Korean Webtoon Style: A single vertical, long panel (manhwa page). ${selectedStyle}. ${selectedColor}. Add dramatic lighting effects, detailed line work, and cinematic camera angles. Include Korean speech bubbles with dialogue and Korean sound effects (SFX) that match the mood and action. The scene is based on: "${textPrompt}".`;
+
+                const payload = {
+                    instances: { prompt: fullPrompt },
+                    parameters: { "sampleCount": 1 }
+                };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
+
+                if (base64Data) {
+                    const imageUrl = `data:image/png;base64,${base64Data}`;
+                    generatedManhwaImage.src = imageUrl;
+                    downloadManhwaLink.href = imageUrl;
+                    downloadManhwaLink.classList.remove('hidden');
+                    showMessage('تم توليد المانهوا بنجاح!', 'text-green-400');
+                } else {
+                    showMessage('عذرًا، حدث خطأ في توليد المانهوا.', 'text-red-400');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                showMessage('فشل الاتصال بالخادم.', 'text-red-400');
+            } finally {
+                clearInterval(progressInterval);
+                manhwaProgress.style.width = `100%`;
+                setTimeout(() => manhwaProgress.style.width = `0%`, 500);
+
+                generateManhwaText.textContent = 'توليد المانهوا';
+                manhwaSpinner.classList.add('hidden');
+                generateManhwaBtn.disabled = false;
+            }
+        });
+
+        async function generateManhwaFromSketch(base64Image, manhwaStyle, userPrompt, outputImage, outputTextElem, spinnerElem, buttonElem, downloadLinkElem) {
+            if (!base64Image) {
+                showMessage('الرجاء تحميل رسمة أولاً.', 'text-red-400');
+                return;
+            }
+            
+            // Show loading state
+            outputTextElem.textContent = 'جاري التحويل...';
+            spinnerElem.classList.remove('hidden');
+            buttonElem.disabled = true;
+            showMessage('', '');
+            downloadLinkElem.classList.add('hidden');
+            outputImage.src = `https://placehold.co/400x800/2a2a2a/ffffff?text=جاري+التحويل`;
+            
+            const styleMap = {
+                'realistic': 'highly detailed, realistic manhwa style',
+                'chibi': 'cute, super deformed (chibi) Korean cartoon style',
+                'comic': 'dynamic, highly expressive comic style',
+                'ink-style': 'classic black and white ink style with detailed hatching and dramatic shadows'
+            };
+            const selectedStyle = styleMap[manhwaStyle];
+
+            try {
+                let fullPrompt = `Enhance this rough drawing/sketch into a professional, high-quality Korean Webtoon (manhwa) art. The art style should be ${selectedStyle}. The final image must have clean, sharp lines, detailed coloring, and a modern, stylized feel. Preserve the characters and core composition. Add professional lighting and cinematic effects. Include Korean speech bubbles and sound effects to match the scene.`;
+                if (userPrompt) {
+                    fullPrompt += ` Additional instructions: ${userPrompt}.`;
+                }
+
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: fullPrompt },
+                            { inlineData: { mimeType: 'image/png', data: base64Image } }
+                        ]
+                    }],
+                    generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+                };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+                
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                if (base64Data) {
+                    const imageUrl = `data:image/png;base64,${base64Data}`;
+                    outputImage.src = imageUrl;
+                    downloadLinkElem.href = imageUrl;
+                    downloadLinkElem.classList.remove('hidden');
+                    showMessage('تم التحويل بنجاح!', 'text-green-400');
+                } else {
+                    showMessage('عذرًا، حدث خطأ في معالجة الصورة.', 'text-red-400');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                showMessage('فشل الاتصال بالخادم.', 'text-red-400');
+            } finally {
+                outputTextElem.textContent = 'تحويل الرسمة';
+                spinnerElem.classList.add('hidden');
+                buttonElem.disabled = false;
+            }
+        }
+
+        // Text-to-Manhwa Image Generation (Mode 6)
+        generateStoryManhwaBtn.addEventListener('click', async () => {
+            const storyPrompt = storyManhwaPrompt.value.trim();
+            if (!storyPrompt) {
+                showMessage('الرجاء كتابة قصة أو وصف للمشهد أولاً.', 'text-red-400');
+                return;
+            }
+            
+            // Show loading state
+            generateStoryManhwaText.textContent = 'جاري التوليد...';
+            storyManhwaSpinner.classList.remove('hidden');
+            generateStoryManhwaBtn.disabled = true;
+            showMessage('', '');
+            downloadStoryManhwaLink.classList.add('hidden');
+            generatedStoryManhwaImage.src = `https://placehold.co/400x800/2a2a2a/ffffff?text=جاري+التوليد`;
+
+            // Animate progress bar
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                if (progress > 95) progress = 95;
+                storyManhwaProgress.style.width = `${progress}%`;
+            }, 300);
+
+            try {
+                // The core system prompt based on user's rules
+                const layoutMap = {
+                    'single-panel': 'a single vertical, long panel',
+                    'close-up': 'a single panel with a dramatic close-up on the character\'s face',
+                    'wide-shot': 'a single wide panel showing the full environment and characters',
+                    'montage': 'a single vertical panel with a montage of multiple smaller scenes, telling a story over time'
+                };
+                const selectedLayout = layoutMap[manhwaLayout.value];
+
+                const fullPrompt = `You are a professional Korean manhwa creator AI. Your task is to generate a single vertical manhwa panel based on the user's story input. This panel should be in an authentic Korean manhwa style with clean line art, expressive characters, and a stylish background. Use a ${selectedLayout} format. Include **speech bubbles for dialogues** and **sound effects (SFX)** where needed. Use a vertical composition and cinematic framing. The final output must be a single, full-color, highly detailed comic panel. The story description is: "${storyPrompt}".`;
+
+                const payload = {
+                    instances: { prompt: fullPrompt },
+                    parameters: { "sampleCount": 1 }
+                };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
+
+                if (base64Data) {
+                    const imageUrl = `data:image/png;base64,${base64Data}`;
+                    generatedStoryManhwaImage.src = imageUrl;
+                    downloadStoryManhwaLink.href = imageUrl;
+                    downloadStoryManhwaLink.classList.remove('hidden');
+                    showMessage('تم توليد اللوحة بنجاح!', 'text-green-400');
+                } else {
+                    showMessage('عذرًا، حدث خطأ في توليد اللوحة.', 'text-red-400');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                showMessage('فشل الاتصال بالخادم.', 'text-red-400');
+            } finally {
+                clearInterval(progressInterval);
+                storyManhwaProgress.style.width = `100%`;
+                setTimeout(() => storyManhwaProgress.style.width = `0%`, 500);
+
+                generateStoryManhwaText.textContent = 'توليد اللوحة';
+                storyManhwaSpinner.classList.add('hidden');
+                generateStoryManhwaBtn.disabled = false;
+            }
+        });
+
+        // Text-to-Japanese Manga Image Generation (Mode 7)
+        generateJapaneseMangaBtn.addEventListener('click', async () => {
+            const japaneseMangaPromptText = japaneseMangaPrompt.value.trim();
+            if (!japaneseMangaPromptText) {
+                showMessage('الرجاء كتابة وصف للقصة أولاً.', 'text-red-400');
+                return;
+            }
+
+            // Show loading state
+            generateJapaneseMangaText.textContent = 'جاري التوليد...';
+            japaneseMangaSpinner.classList.remove('hidden');
+            generateJapaneseMangaBtn.disabled = true;
+            showMessage('', '');
+            downloadJapaneseMangaLink.classList.add('hidden');
+            generatedJapaneseMangaImage.src = `https://placehold.co/400x400/2a2a2a/ffffff?text=جاري+التوليد`;
+
+            // Animate progress bar
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                if (progress > 95) progress = 95;
+                japaneseMangaProgress.style.width = `${progress}%`;
+            }, 300);
+
+            try {
+                const fullPrompt = `Japanese manga style illustration, a single panel, black and white line art with screentone shading, based on the following description: "${japaneseMangaPromptText}". Use dynamic and expressive art, with visible black ink brush strokes, and focus on the character and emotion. Include Japanese text and sound effects where appropriate.`;
+                
+                const payload = {
+                    instances: { prompt: fullPrompt },
+                    parameters: { "sampleCount": 1 }
+                };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
+
+                if (base64Data) {
+                    const imageUrl = `data:image/png;base64,${base64Data}`;
+                    generatedJapaneseMangaImage.src = imageUrl;
+                    downloadJapaneseMangaLink.href = imageUrl;
+                    downloadJapaneseMangaLink.classList.remove('hidden');
+                    showMessage('تم توليد المانجا بنجاح!', 'text-green-400');
+                } else {
+                    showMessage('عذرًا، حدث خطأ في توليد المانجا.', 'text-red-400');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                showMessage('فشل الاتصال بالخادم.', 'text-red-400');
+            } finally {
+                clearInterval(progressInterval);
+                japaneseMangaProgress.style.width = `100%`;
+                setTimeout(() => japaneseMangaProgress.style.width = `0%`, 500);
+
+                generateJapaneseMangaText.textContent = 'توليد المانجا';
+                japaneseMangaSpinner.classList.add('hidden');
+                generateJapaneseMangaBtn.disabled = false;
+            }
+        });
+
+
+        function showMessage(msg, colorClass) {
+            message.textContent = msg;
+            message.className = `mt-4 text-center font-bold ${colorClass}`;
+        }
     </script>
 </body>
 </html>
